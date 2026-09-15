@@ -72,11 +72,14 @@ async function ensureTableColumns(pool: pg.Pool) {
 const DEFAULT_SUPABASE_URL = "postgresql://postgres.ykwahzzufhejebscjjvv:cfjpobobatam@aws-0-ap-south-1.pooler.supabase.com:5432/postgres";
 
 export async function getDb() {
-  const connectionString =
+  const rawUrl =
     process.env.DATABASE_URL ||
     process.env.SUPABASE_DATABASE_URL ||
     ENV.databaseUrl ||
     DEFAULT_SUPABASE_URL;
+
+  // Ensure port 5432 (Session mode) is used on Supabase poolers to support Drizzle prepared statements
+  const connectionString = rawUrl ? rawUrl.replace(":6543", ":5432") : "";
 
   if (!_db && connectionString) {
     try {

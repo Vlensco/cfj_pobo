@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gte, ilike, inArray, like, lte, or, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import {
   Customer,
   customers,
@@ -30,8 +30,6 @@ import { OrderRequestStatus } from "./adminOrders";
 import { getOverdueCutoff, getReminderDateKey, rankRequestedProducts } from "./followUpMonitoring";
 import { ENV } from "./_core/env";
 
-const { Pool } = pg;
-
 type OrderQuery = {
   status?: OrderRequestStatus;
   search?: string;
@@ -47,27 +45,8 @@ type SummaryScope = Pick<OrderQuery, "search" | "productId" | "startDate" | "end
 type StatusTotals = { count: number; amount: number };
 type ComparisonSummary = StatusTotals & { change: number | null };
 
-let _pool: pg.Pool | null = null;
+let _client: postgres.Sql | null = null;
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
-let _migrationRan = false;
-
-async function ensureTableColumns(pool: pg.Pool) {
-  if (_migrationRan) return;
-  _migrationRan = true;
-  const queries = [
-    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS fulfillment_stage VARCHAR(32) DEFAULT 'placed'",
-    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS courier_name VARCHAR(120)",
-    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(120)",
-    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS tracking_url TEXT",
-    "ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS phone VARCHAR(40)",
-    "ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_hash TEXT",
-  ];
-  for (const q of queries) {
-    try {
-      await pool.query(q);
-    } catch {}
-  }
-}
 
 const DEFAULT_SUPABASE_URL = "postgresql://postgres.ykwahzzufhejebscjjvv:cfjpobobatam@aws-0-ap-south-1.pooler.supabase.com:5432/postgres";
 
@@ -78,7 +57,6 @@ export async function getDb() {
     ENV.databaseUrl ||
     DEFAULT_SUPABASE_URL;
 
-  // Ensure port 5432 (Session mode) is used on Supabase poolers to support Drizzle prepared statements
   const connectionString = rawUrl ? rawUrl.replace(":6543", ":5432") : "";
 
   if (!_db && connectionString) {
@@ -87,21 +65,17 @@ export async function getDb() {
         !connectionString.includes("localhost") &&
         !connectionString.includes("127.0.0.1");
 
-      _pool = new Pool({
-        connectionString,
-        ssl: isRemote ? { rejectUnauthorized: false } : undefined,
+      _client = postgres(connectionString, {
+        ssl: isRemote ? { rejectUnauthorized: false } : false,
         max: isRemote ? 5 : 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
+        idle_timeout: 30,
+        connect_timeout: 10,
       });
-      _db = drizzle(_pool, { schema });
-      ensureTableColumns(_pool).catch(() => {});
+      _db = drizzle(_client, { schema });
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
     }
-  } else if (_pool && !_migrationRan) {
-    ensureTableColumns(_pool).catch(() => {});
   }
   return _db;
 }

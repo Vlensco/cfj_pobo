@@ -56078,7 +56078,7 @@ async function ensureTableColumns(pool2) {
     }
   }
 }
-var DEFAULT_SUPABASE_URL = "postgresql://postgres.ykwahzzufhejebscjjvv:cfjpobobatam@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
+var DEFAULT_SUPABASE_URL = "postgresql://postgres.ykwahzzufhejebscjjvv:cfjpobobatam@aws-0-ap-south-1.pooler.supabase.com:5432/postgres";
 async function getDb() {
   const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL || ENV.databaseUrl || DEFAULT_SUPABASE_URL;
   if (!_db && connectionString) {
@@ -89971,9 +89971,6 @@ function createExpressApp() {
 // server/_core/vercelHandler.ts
 var app = createExpressApp();
 function handler(req, res) {
-  if (req.url === "/api/health" || req.url === "/health") {
-    return res.status(200).json({ status: "ok", timestamp: Date.now() });
-  }
   return app(req, res);
 }
 export {

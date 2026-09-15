@@ -1,16 +1,7 @@
 import "dotenv/config";
-import express from "express";
 import { createServer } from "http";
 import net from "net";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { registerStorageProxy } from "./storageProxy";
-import { appRouter } from "../routers";
-import { followUpReminderHandler } from "../followUpReminders";
-import { stripeWebhookHandler } from "../stripeWebhook";
-import { paddleWebhookHandler } from "../paddleWebhook";
-import { nowpaymentsWebhookHandler } from "../nowpaymentsWebhook";
-import { createContext } from "./context";
+import { createExpressApp } from "../app";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -29,32 +20,8 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
-  const app = express();
+  const app = createExpressApp();
   const server = createServer(app);
-
-  // Raw body webhooks
-  app.post(
-    "/api/stripe/webhook",
-    express.raw({ type: "application/json" }),
-    stripeWebhookHandler
-  );
-  app.post(
-    "/api/paddle/webhook",
-    express.raw({ type: "application/json" }),
-    paddleWebhookHandler
-  );
-  app.post(
-    "/api/nowpayments/webhook",
-    express.json(),
-    nowpaymentsWebhookHandler
-  );
-
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  registerStorageProxy(app);
-  registerOAuthRoutes(app);
-  app.post("/api/scheduled/follow-up-reminders", followUpReminderHandler);
-  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
 
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

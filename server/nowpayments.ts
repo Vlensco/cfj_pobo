@@ -1,4 +1,3 @@
-import "dotenv/config";
 import crypto from "crypto";
 import axios from "axios";
 

@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { Environment, Paddle } from "@paddle/paddle-node-sdk";
 
 const paddleApiKey = process.env.PADDLE_API_KEY || "";

@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { calculatePercentChange, getComparisonWindows } from "./adminMetrics";
+describe("administrative performance metrics", () => { it("builds an equal-length preceding comparison window", () => expect(getComparisonWindows("2026-08-20", "2026-08-26").previous).toMatchObject({ startDate: "2026-08-13", endDate: "2026-08-19" })); it("returns rounded percentage movement and avoids misleading division by zero", () => { expect(calculatePercentChange(15, 12)).toBe(25); expect(calculatePercentChange(8, 10)).toBe(-20); expect(calculatePercentChange(2, 0)).toBeNull(); }); });

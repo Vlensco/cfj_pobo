@@ -1,0 +1,12 @@
+import { describe, expect, it, vi } from "vitest";
+const mocks = vi.hoisted(() => ({ listOrderRequests: vi.fn(), updateOrderRequestStatus: vi.fn(), exportOrderRequests: vi.fn() }));
+vi.mock("../db", () => ({ listOrderRequests: mocks.listOrderRequests, updateOrderRequestStatus: mocks.updateOrderRequestStatus, exportOrderRequests: mocks.exportOrderRequests }));
+import { adminOrderRouter } from "./adminOrders";
+
+const adminContext = { user: { id: 1, openId: "admin", name: "Admin", email: "admin@example.com", loginMethod: "manus", role: "admin", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } } as any;
+describe("admin order procedures", () => {
+  it("lists the requested status and product filters with the selected date window", async () => { const page = { orders: [{ id: 1, reference: "TR-ONE" }], total: 1, page: 1, pageSize: 10, totalPages: 1 }; mocks.listOrderRequests.mockResolvedValue(page); const input = { status: "new" as const, productId: "junction-ls", overdueOnly: true, startDate: "2026-08-20", endDate: "2026-08-26", page: 1, pageSize: 10 }; const result = await adminOrderRouter.createCaller(adminContext).list(input); expect(mocks.listOrderRequests).toHaveBeenCalledWith(input); expect(result).toEqual(page); });
+  it("updates a request status and reports missing requests", async () => { mocks.updateOrderRequestStatus.mockResolvedValueOnce({ id: 1, status: "contacted" }); await expect(adminOrderRouter.createCaller(adminContext).updateStatus({ id: 1, status: "contacted" })).resolves.toMatchObject({ status: "contacted" }); mocks.updateOrderRequestStatus.mockResolvedValueOnce(null); await expect(adminOrderRouter.createCaller(adminContext).updateStatus({ id: 2, status: "closed" })).rejects.toMatchObject({ code: "NOT_FOUND" }); });
+  it("fails clearly when the request store is unavailable", async () => { mocks.listOrderRequests.mockResolvedValue(null); await expect(adminOrderRouter.createCaller(adminContext).list({ startDate: "2026-08-20", endDate: "2026-08-26", page: 1, pageSize: 10 })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" }); });
+  it("rejects an overdue follow-up view paired with a contacted status", async () => { await expect(adminOrderRouter.createCaller(adminContext).list({ status: "contacted", overdueOnly: true, startDate: "2026-08-20", endDate: "2026-08-26", page: 1, pageSize: 10 })).rejects.toMatchObject({ code: "BAD_REQUEST" }); });
+});

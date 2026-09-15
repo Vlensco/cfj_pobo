@@ -46679,17 +46679,17 @@ var handlers = [
   octetStreamContentTypeHandler
 ];
 function getContentTypeHandler(req) {
-  const handler2 = handlers.find((handler$1) => handler$1.isMatch(req));
-  if (handler2) return handler2;
-  if (!handler2 && req.method === "GET") return jsonContentTypeHandler;
+  const handler = handlers.find((handler$1) => handler$1.isMatch(req));
+  if (handler) return handler;
+  if (!handler && req.method === "GET") return jsonContentTypeHandler;
   throw new TRPCError({
     code: "UNSUPPORTED_MEDIA_TYPE",
     message: req.headers.has("content-type") ? `Unsupported content-type "${req.headers.get("content-type")}` : "Missing content-type header"
   });
 }
 async function getRequestInfo(opts) {
-  const handler2 = getContentTypeHandler(opts.req);
-  return await handler2.parse(opts);
+  const handler = getContentTypeHandler(opts.req);
+  return await handler.parse(opts);
 }
 function isAbortError(error46) {
   return isObject(error46) && error46["name"] === "AbortError";
@@ -89943,6 +89943,9 @@ function createExpressApp() {
   registerStorageProxy(app2);
   registerOAuthRoutes(app2);
   app2.post(["/api/scheduled/follow-up-reminders", "/scheduled/follow-up-reminders"], followUpReminderHandler);
+  app2.get(["/api/health", "/health"], (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: Date.now() });
+  });
   app2.all(["/__manus__/logs", "/api/__manus__/logs"], (_req, res) => {
     res.status(200).json({ success: true });
   });
@@ -89966,21 +89969,9 @@ function createExpressApp() {
 
 // server/_core/vercelHandler.ts
 var app = createExpressApp();
-function handler(req, res) {
-  try {
-    if (req.url === "/api/health" || req.url === "/health") {
-      return res.status(200).json({ ok: true, timestamp: Date.now() });
-    }
-    return app(req, res);
-  } catch (error46) {
-    console.error("[Vercel Handler Error]:", error46);
-    if (!res.headersSent) {
-      res.status(500).json({ error: "Handler error", message: String(error46) });
-    }
-  }
-}
+var vercelHandler_default = app;
 export {
-  handler as default
+  vercelHandler_default as default
 };
 /*! Bundled license information:
 

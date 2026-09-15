@@ -1,4 +1,3 @@
-import "dotenv/config";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./_core/oauth";
@@ -15,17 +14,17 @@ export function createExpressApp() {
 
   // Raw body webhooks
   app.post(
-    "/api/stripe/webhook",
+    ["/api/stripe/webhook", "/stripe/webhook"],
     express.raw({ type: "application/json" }),
     stripeWebhookHandler
   );
   app.post(
-    "/api/paddle/webhook",
+    ["/api/paddle/webhook", "/paddle/webhook"],
     express.raw({ type: "application/json" }),
     paddleWebhookHandler
   );
   app.post(
-    "/api/nowpayments/webhook",
+    ["/api/nowpayments/webhook", "/nowpayments/webhook"],
     express.json(),
     nowpaymentsWebhookHandler
   );
@@ -35,7 +34,7 @@ export function createExpressApp() {
 
   registerStorageProxy(app);
   registerOAuthRoutes(app);
-  app.post("/api/scheduled/follow-up-reminders", followUpReminderHandler);
+  app.post(["/api/scheduled/follow-up-reminders", "/scheduled/follow-up-reminders"], followUpReminderHandler);
   
   // Manus debug log mock for production
   app.all(["/__manus__/logs", "/api/__manus__/logs"], (_req, res) => {

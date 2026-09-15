@@ -46680,17 +46680,17 @@ var handlers = [
   octetStreamContentTypeHandler
 ];
 function getContentTypeHandler(req) {
-  const handler = handlers.find((handler$1) => handler$1.isMatch(req));
-  if (handler) return handler;
-  if (!handler && req.method === "GET") return jsonContentTypeHandler;
+  const handler2 = handlers.find((handler$1) => handler$1.isMatch(req));
+  if (handler2) return handler2;
+  if (!handler2 && req.method === "GET") return jsonContentTypeHandler;
   throw new TRPCError({
     code: "UNSUPPORTED_MEDIA_TYPE",
     message: req.headers.has("content-type") ? `Unsupported content-type "${req.headers.get("content-type")}` : "Missing content-type header"
   });
 }
 async function getRequestInfo(opts) {
-  const handler = getContentTypeHandler(opts.req);
-  return await handler.parse(opts);
+  const handler2 = getContentTypeHandler(opts.req);
+  return await handler2.parse(opts);
 }
 function isAbortError(error46) {
   return isObject(error46) && error46["name"] === "AbortError";
@@ -89970,9 +89970,14 @@ function createExpressApp() {
 
 // server/_core/vercelHandler.ts
 var app = createExpressApp();
-var vercelHandler_default = app;
+function handler(req, res) {
+  if (req.url === "/api/health" || req.url === "/health") {
+    return res.status(200).json({ status: "ok", timestamp: Date.now() });
+  }
+  return app(req, res);
+}
 export {
-  vercelHandler_default as default
+  handler as default
 };
 /*! Bundled license information:
 

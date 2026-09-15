@@ -89964,25 +89964,18 @@ function createExpressApp() {
   return app2;
 }
 
-// api/index.ts
-var app = null;
-function getApp() {
-  if (!app) {
-    app = createExpressApp();
-  }
-  return app;
-}
+// server/_core/vercelHandler.ts
+var app = createExpressApp();
 function handler(req, res) {
   try {
     if (req.url === "/api/health" || req.url === "/health") {
       return res.status(200).json({ ok: true, timestamp: Date.now() });
     }
-    const expressApp = getApp();
-    return expressApp(req, res);
+    return app(req, res);
   } catch (error46) {
-    console.error("[Vercel Handler Top-Level Error]:", error46);
+    console.error("[Vercel Handler Error]:", error46);
     if (!res.headersSent) {
-      res.status(500).json({ error: "Handler crash", message: String(error46) });
+      res.status(500).json({ error: "Handler error", message: String(error46) });
     }
   }
 }

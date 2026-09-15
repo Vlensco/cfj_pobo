@@ -53,6 +53,11 @@ export function createExpressApp() {
   registerOAuthRoutes(app);
   app.post(["/api/scheduled/follow-up-reminders", "/scheduled/follow-up-reminders"], followUpReminderHandler);
   
+  // Health check endpoint
+  app.get(["/api/health", "/health"], (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: Date.now() });
+  });
+
   // Manus debug log mock for production
   app.all(["/__manus__/logs", "/api/__manus__/logs"], (_req, res) => {
     res.status(200).json({ success: true });

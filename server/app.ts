@@ -41,7 +41,13 @@ export function createExpressApp() {
     res.status(200).json({ success: true });
   });
 
-  const trpcMiddleware = createExpressMiddleware({ router: appRouter, createContext });
+  const trpcMiddleware = createExpressMiddleware({
+    router: appRouter,
+    createContext,
+    onError: ({ error, path }) => {
+      console.error(`[tRPC Error] on path ${path}:`, error);
+    },
+  });
   app.use("/api/trpc", trpcMiddleware);
   app.use("/trpc", trpcMiddleware);
 

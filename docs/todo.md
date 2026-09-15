@@ -1,0 +1,82 @@
+# Project TODO
+
+- [x] Establish the Terrace visual system with premium typography, palette, editorial hierarchy, and accessibility-safe contrast.
+- [x] Build a responsive homepage with campaign storytelling, featured drops, collection entry points, and shop calls to action.
+- [x] Build a responsive collection catalog with filtering, editorial product cards, and clear product discovery paths.
+- [x] Build product-detail pages with visual gallery, color and size selection, pricing, garment details, and fit guidance.
+- [x] Add persistent cart state with quantity controls, order summary, empty state, and accessible cart drawer.
+- [x] Add a Stripe sandbox-ready checkout flow with server-side payment session creation and clear fallback states when test credentials are absent.
+- [x] Add mobile-first navigation, language selection for English, Indonesian, and Mandarin, and polished responsive interactions.
+- [x] Add automated tests for commerce utility logic and run project validation.
+- [x] Verify the final storefront visually on desktop and mobile and create the final project checkpoint.
+- [x] Complete an accessibility contrast pass for small utility text and focus states.
+- [x] Expand product presentation into a multi-view visual gallery with selectable thumbnails.
+- [x] Show a specific Stripe sandbox configuration message when checkout credentials are unavailable.
+- [x] Save the verified final project checkpoint.
+- [x] Run and document a full accessibility contrast review across storefront text and focus states.
+- [x] Save a complete accessibility audit covering text and focus-outline contrast on fog, paper, ink, and pitch backgrounds.
+- [x] Add an elegant non-blocking loading animation when a product is added to the shopping bag.
+- [x] Add a polished checkout-loading state while the Stripe checkout session is created.
+- [x] Add category filtering to the product catalog.
+- [x] Add price-range filtering to the product catalog.
+- [x] Add tests and visual verification for the new loading and filtering interactions.
+- [x] Include client-side catalog interaction tests in the automated test runner.
+- [x] Verify add-to-bag and checkout pending states disable controls and display loading feedback.
+- [x] Verify category, price, combined, and empty-state catalog results through interaction-level tests.
+- [x] Add product sorting for featured, newest, lowest price, and highest price.
+- [x] Add keyword search across product names and catalog copy.
+- [x] Sync search, category, price, and sort preferences to shareable URL query parameters.
+- [x] Add interaction tests and visual verification for URL-synced catalog discovery.
+- [x] Change catalog display and Stripe Checkout price data to supported Indonesian rupiah amounts.
+- [x] Add tests for supported-currency checkout line items and storefront price formatting.
+- [x] Verify the updated checkout flow no longer requests unsupported USD processing.
+- [x] Superseded: add a checkout-session route test that verifies IDR line items reach Stripe session creation.
+- [x] Superseded: verify the Stripe sandbox checkout mutation opens without the unsupported USD currency error.
+- [x] Superseded: specify a Stripe card payment method compatible with the account's IDR Checkout Session.
+- [x] Replace Stripe checkout with a temporary customer order-request flow.
+- [x] Collect contact details and order notes alongside the current shopping bag summary.
+- [x] Add confirmation, validation tests, and responsive verification for the order-request flow.
+- [x] Update storefront interaction mocks and assertions for the order-request mutation.
+- [x] Remove unused Stripe Checkout and webhook runtime paths from the temporary order-request implementation.
+- [x] Add UI tests for order-request field validation, cancellation, and success confirmation.
+- [x] Visually verify the order-request form and confirmation states on desktop and mobile.
+- [x] Build a protected admin dashboard that lists, filters, and updates order-request status.
+- [x] Add order-request detail viewing for customer data, requested pieces, and notes.
+- [x] Deferred: send automatic customer confirmation emails when an order request is submitted, pending provider API credentials.
+- [x] Deferred: send a WhatsApp message with order details to the configured administrator number, pending provider API credentials.
+- [x] Add tests and responsive verification for the admin dashboard and delivery workflow.
+- [x] Deferred: configure a verified email sender and email-delivery API credentials until a provider account is available.
+- [x] Deferred: configure WhatsApp Business Cloud API credentials, sender identity, and administrator destination number until an account is available.
+- [x] Finalize the admin dashboard without external delivery integrations.
+- [x] Document email and WhatsApp automation as deferred until provider APIs are available.
+- [x] Add server tests for admin order listing, status updates, and unavailable-request failures.
+- [x] Add UI interaction tests for populated admin list filtering, request details, status changes, and query errors.
+- [x] Add an explicit admin dashboard error state for failed request loading.
+- [x] Capture desktop and mobile visual verification of populated administrative request and detail states.
+- [x] Add admin order search by customer name and request reference.
+- [x] Add paginated admin order retrieval with clear page navigation and result totals.
+- [x] Add a protected XLSX export of the matching administrative order data.
+- [x] Add router and dashboard interaction tests plus responsive verification for search, pagination, and export.
+- [x] Add administrative order filtering by submitted date range.
+- [x] Add a top-level summary of request totals by New, Contacted, and Closed status.
+- [x] Add CSV report export as a compatible alternative to XLSX export.
+- [x] Add query, export, and responsive dashboard tests for the new reporting controls.
+- [x] Add quick date-range presets for the last 7 days and the current month.
+- [x] Add a daily order-request trend visualization that follows the active date and search scope.
+- [x] Add per-status request count and requested-value totals to the administrative summary.
+- [x] Add aggregation, interaction, and responsive verification for the monitoring enhancements.
+- [x] Add an admin product-type dropdown filter based on requested order items.
+- [x] Add inline order-row actions for moving New requests directly to Contacted or Closed.
+- [x] Add period-over-period percentage indicators for the status summary, using the active date range.
+- [x] Add query, interaction, and responsive verification for product filtering, quick statuses, and performance indicators.
+- [x] Allow development-only populated dashboard previews to bypass the loading gate during visual verification.
+- [x] Add an uncontacted-customer filter for New requests pending more than 24 hours.
+- [x] Add a product popularity ranking based on requested item quantities.
+- [ ] Configure a recurring owner reminder for overdue uncontacted New requests.
+- [x] Add query, scheduled-job, interaction, and responsive verification for follow-up monitoring and product rankings.
+- [ ] Add automatic owner notifications for New requests older than 24 hours using a daily background schedule.
+- [x] Add a dashboard counter for New requests that require follow-up.
+- [x] Add an authenticated, idempotent scheduled owner-notification endpoint for overdue New requests.
+- [ ] Activate the daily owner-notification schedule after the updated website is published.
+- [x] Record a durable per-order, per-day reminder claim before notification delivery to prevent duplicate retry alerts.
+- [x] Cover the partial-failure retry path so an already claimed reminder is not delivered twice.

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-const secretKey = process.env.STRIPE_SECRET_KEY || "";
+const secretKey = process.env.STRIPE_SECRET_KEY || "placeholder_stripe_key";
 
 export const stripe = new Stripe(secretKey, {
   typescript: true,

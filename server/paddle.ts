@@ -1,6 +1,6 @@
 import { Environment, Paddle } from "@paddle/paddle-node-sdk";
 
-const paddleApiKey = process.env.PADDLE_API_KEY || "";
+const paddleApiKey = process.env.PADDLE_API_KEY || "placeholder_paddle_key";
 
 const paddleEnv = process.env.PADDLE_ENV === "production" ? Environment.production : Environment.sandbox;
 

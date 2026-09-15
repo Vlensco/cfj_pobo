@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import axios from "axios";
 
-const apiKey = process.env.NOWPAYMENTS_API_KEY || "";
-const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET || "";
+const apiKey = process.env.NOWPAYMENTS_API_KEY || "placeholder_nowpayments_key";
+const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET || "placeholder_nowpayments_secret";
 const isSandbox = process.env.NOWPAYMENTS_ENV !== "production";
 
 const BASE_URL = isSandbox

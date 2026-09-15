@@ -36,7 +36,15 @@ export function createExpressApp() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/follow-up-reminders", followUpReminderHandler);
-  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
+  
+  // Manus debug log mock for production
+  app.all(["/__manus__/logs", "/api/__manus__/logs"], (_req, res) => {
+    res.status(200).json({ success: true });
+  });
+
+  const trpcMiddleware = createExpressMiddleware({ router: appRouter, createContext });
+  app.use("/api/trpc", trpcMiddleware);
+  app.use("/trpc", trpcMiddleware);
 
   return app;
 }

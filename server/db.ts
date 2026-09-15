@@ -54,33 +54,42 @@ let _migrationRan = false;
 async function ensureTableColumns(pool: pg.Pool) {
   if (_migrationRan) return;
   _migrationRan = true;
-  try {
-    await pool.query(`
-      ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS fulfillment_stage VARCHAR(32) DEFAULT 'placed';
-      ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS courier_name VARCHAR(120);
-      ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(120);
-      ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS tracking_url TEXT;
-      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS phone VARCHAR(40);
-      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_hash TEXT;
-    `);
-  } catch (e) {
-    console.warn("[Database] ensureTableColumns notice:", e);
+  const queries = [
+    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS fulfillment_stage VARCHAR(32) DEFAULT 'placed'",
+    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS courier_name VARCHAR(120)",
+    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(120)",
+    "ALTER TABLE IF EXISTS order_requests ADD COLUMN IF NOT EXISTS tracking_url TEXT",
+    "ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS phone VARCHAR(40)",
+    "ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_hash TEXT",
+  ];
+  for (const q of queries) {
+    try {
+      await pool.query(q);
+    } catch {}
   }
 }
 
+const DEFAULT_SUPABASE_URL = "postgresql://postgres.ykwahzzufhejebscjjvv:cfjpobobatam@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
+
 export async function getDb() {
-  if (!_db && (process.env.DATABASE_URL || ENV.databaseUrl)) {
-    const connectionString = process.env.DATABASE_URL || ENV.databaseUrl;
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.SUPABASE_DATABASE_URL ||
+    ENV.databaseUrl ||
+    DEFAULT_SUPABASE_URL;
+
+  if (!_db && connectionString) {
     try {
       const isRemote =
-        connectionString.includes("supabase.co") ||
-        connectionString.includes("pooler.supabase.com") ||
-        connectionString.includes("sslmode=") ||
-        connectionString.includes("aws-");
-      
+        !connectionString.includes("localhost") &&
+        !connectionString.includes("127.0.0.1");
+
       _pool = new Pool({
         connectionString,
         ssl: isRemote ? { rejectUnauthorized: false } : undefined,
+        max: isRemote ? 5 : 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
       });
       _db = drizzle(_pool, { schema });
       ensureTableColumns(_pool).catch(() => {});

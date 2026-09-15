@@ -89922,8 +89922,24 @@ function createExpressApp() {
     import_express.default.json(),
     nowpaymentsWebhookHandler
   );
-  app2.use(import_express.default.json({ limit: "50mb" }));
-  app2.use(import_express.default.urlencoded({ limit: "50mb", extended: true }));
+  app2.use((req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD" || req.body && typeof req.body === "object") {
+      return next();
+    }
+    import_express.default.json({ limit: "50mb" })(req, res, (err) => {
+      if (err) return next();
+      next();
+    });
+  });
+  app2.use((req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD" || req.body && typeof req.body === "object") {
+      return next();
+    }
+    import_express.default.urlencoded({ limit: "50mb", extended: true })(req, res, (err) => {
+      if (err) return next();
+      next();
+    });
+  });
   registerStorageProxy(app2);
   registerOAuthRoutes(app2);
   app2.post(["/api/scheduled/follow-up-reminders", "/scheduled/follow-up-reminders"], followUpReminderHandler);

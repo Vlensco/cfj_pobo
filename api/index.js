@@ -89930,7 +89930,13 @@ function createExpressApp() {
   app2.all(["/__manus__/logs", "/api/__manus__/logs"], (_req, res) => {
     res.status(200).json({ success: true });
   });
-  const trpcMiddleware = createExpressMiddleware({ router: appRouter, createContext });
+  const trpcMiddleware = createExpressMiddleware({
+    router: appRouter,
+    createContext,
+    onError: ({ error: error46, path: path3 }) => {
+      console.error(`[tRPC Error] on path ${path3}:`, error46);
+    }
+  });
   app2.use("/api/trpc", trpcMiddleware);
   app2.use("/trpc", trpcMiddleware);
   return app2;
@@ -89945,15 +89951,31 @@ function getApp() {
   return app;
 }
 function handler(req, res) {
-  if (req.url === "/api/health" || req.url === "/health") {
-    return res.status(200).json({ ok: true, timestamp: Date.now() });
+  try {
+    if (req.url === "/api/health" || req.url === "/health") {
+      return res.status(200).json({ ok: true, timestamp: Date.now() });
+    }
+    const originalUrl = req.headers["x-vercel-original-url"] || req.headers["x-matched-path"] || req.headers["x-forwarded-uri"] || req.url;
+    if (typeof originalUrl === "string" && originalUrl.length > 0) {
+      req.url = originalUrl;
+    }
+    const expressApp = getApp();
+    expressApp(req, res, (err) => {
+      if (err) {
+        console.error("[Express Unhandled Error]:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Internal Server Error", message: String(err) });
+        }
+      } else if (!res.headersSent) {
+        res.status(404).json({ error: "Not Found", url: req.url });
+      }
+    });
+  } catch (error46) {
+    console.error("[Vercel Handler Top-Level Error]:", error46);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Handler crash", message: String(error46) });
+    }
   }
-  const originalUrl = req.headers["x-vercel-original-url"] || req.headers["x-matched-path"] || req.headers["x-forwarded-uri"] || req.url;
-  if (typeof originalUrl === "string" && originalUrl.length > 0) {
-    req.url = originalUrl;
-  }
-  const expressApp = getApp();
-  return expressApp(req, res);
 }
 export {
   handler as default

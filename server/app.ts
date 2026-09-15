@@ -29,8 +29,25 @@ export function createExpressApp() {
     nowpaymentsWebhookHandler
   );
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use((req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD" || (req.body && typeof req.body === "object")) {
+      return next();
+    }
+    express.json({ limit: "50mb" })(req, res, (err) => {
+      if (err) return next();
+      next();
+    });
+  });
+
+  app.use((req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD" || (req.body && typeof req.body === "object")) {
+      return next();
+    }
+    express.urlencoded({ limit: "50mb", extended: true })(req, res, (err) => {
+      if (err) return next();
+      next();
+    });
+  });
 
   registerStorageProxy(app);
   registerOAuthRoutes(app);

@@ -45884,7 +45884,7 @@ var init_paddle2 = __esm({
     "use strict";
     init_index_esm_node();
     init_exchangeRate();
-    paddleApiKey = process.env.PADDLE_API_KEY || "";
+    paddleApiKey = process.env.PADDLE_API_KEY || "placeholder_paddle_key";
     paddleEnv = process.env.PADDLE_ENV === "production" ? Environment.production : Environment.sandbox;
     paddle = new Paddle2(paddleApiKey, {
       environment: paddleEnv
@@ -89139,7 +89139,7 @@ Stripe.initialize(new NodePlatformFunctions());
 var stripe_esm_node_default = Stripe;
 
 // server/stripe.ts
-var secretKey = process.env.STRIPE_SECRET_KEY || "";
+var secretKey = process.env.STRIPE_SECRET_KEY || "placeholder_stripe_key";
 var stripe = new stripe_esm_node_default(secretKey, {
   typescript: true
 });
@@ -89440,8 +89440,8 @@ var paddleRouter = router({
 init_axios2();
 init_exchangeRate();
 import crypto6 from "crypto";
-var apiKey = process.env.NOWPAYMENTS_API_KEY || "";
-var ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET || "";
+var apiKey = process.env.NOWPAYMENTS_API_KEY || "placeholder_nowpayments_key";
+var ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET || "placeholder_nowpayments_secret";
 var isSandbox = process.env.NOWPAYMENTS_ENV !== "production";
 var BASE_URL = isSandbox ? "https://api-sandbox.nowpayments.io/v1" : "https://api.nowpayments.io/v1";
 async function createCryptoInvoice({

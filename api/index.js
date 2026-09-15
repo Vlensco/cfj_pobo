@@ -52818,7 +52818,8 @@ async function getDb() {
         ssl: isRemote ? { rejectUnauthorized: false } : false,
         max: isRemote ? 5 : 20,
         idle_timeout: 30,
-        connect_timeout: 10
+        connect_timeout: 10,
+        prepare: false
       });
       _db = drizzle(_client, { schema: schema_exports });
     } catch (error46) {

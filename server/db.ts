@@ -70,6 +70,7 @@ export async function getDb() {
         max: isRemote ? 5 : 20,
         idle_timeout: 30,
         connect_timeout: 10,
+        prepare: false,
       });
       _db = drizzle(_client, { schema });
     } catch (error) {

@@ -24,7 +24,7 @@ export default function Shop() {
   const [preferences, setPreferences] = useState<CatalogPreferences>(getCurrentPreferences);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
-  const catalogQuery = trpc.adminProducts.list.useQuery({ pageSize: 100 });
+  const catalogQuery = trpc.adminProducts.list.useQuery({ pageSize: 2500 });
 
   useEffect(() => {
     const onPopState = () => setPreferences(getCurrentPreferences());

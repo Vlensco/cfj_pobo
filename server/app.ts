@@ -67,6 +67,12 @@ export function createExpressApp() {
   });
   app.use("/api/trpc", trpcMiddleware);
   app.use("/trpc", trpcMiddleware);
+  app.use((req, res, next) => {
+    if (req.url.startsWith("/api/trpc") || req.url.startsWith("/trpc") || req.originalUrl?.includes("/trpc") || req.query.batch) {
+      return trpcMiddleware(req, res, next);
+    }
+    next();
+  });
 
   return app;
 }

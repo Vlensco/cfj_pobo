@@ -1,0 +1,8 @@
+#!/bin/sh
+# Blocks commits that add credentials. Enabled by `git config core.hooksPath .githooks`
+# (the package.json "prepare" script runs this on install).
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node not found, skipping the credential scan." >&2
+  exit 0
+fi
+exec node "$(git rev-parse --show-toplevel)/.githooks/scan-secrets.cjs"

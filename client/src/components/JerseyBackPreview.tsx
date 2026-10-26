@@ -123,7 +123,7 @@ export function JerseyBackPreview({ colorSource, name, number, patchLabel, fontF
         <g className="jersey-back-patch">
           <rect x="322" y="112" width="44" height="30" rx="4" transform="rotate(37 344 127)" />
           <text x="344" y="130" transform="rotate(37 344 127)">
-            {patchLabel.split(" ")[0]}
+            {patchLabel.split(" ").slice(0, 2).join(" ")}
           </text>
         </g>
       )}

@@ -1,9 +1,40 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildOrderRequestLines, getOrderTrackingDetails } from "./orderRequests";
+import { buildOrderRequestLines, getOrderTrackingDetails, recordOnlinePaymentOrder } from "./orderRequests";
 import * as db from "../../db";
 import { listCatalogAddOns } from "../catalog/csvCatalog";
 
 const FONT_REFERENCE = { id: "abcdefgh12345678", fileName: "font.png", mimeType: "image/png" };
+
+describe("paid online orders", () => {
+  it("keep each line's customisation and list the font file in the notes", async () => {
+    let saved: Record<string, unknown> = {};
+    const fakeDb = {
+      insert: () => ({
+        values: (row: Record<string, unknown>) => {
+          saved = row;
+          return { onConflictDoUpdate: () => ({ returning: async () => [row] }) };
+        },
+      }),
+    };
+    vi.spyOn(db, "getDb").mockResolvedValueOnce(fakeDb as unknown as Awaited<ReturnType<typeof db.getDb>>);
+
+    const lines = buildOrderRequestLines([
+      {
+        productId: "junction-ls",
+        quantity: 1,
+        color: "Ink",
+        size: "M",
+        customization: { nameset: { name: "RUDI", number: "10", fontReference: FONT_REFERENCE } },
+      },
+    ]);
+    await recordOnlinePaymentOrder({ reference: "TR-WS-TEST0001", notes: "Payment: Wise", lines, subtotal: lines[0].lineTotal });
+
+    const [stored] = JSON.parse(String(saved.items));
+    expect(stored.customization.nameset).toMatchObject({ name: "RUDI", fontReference: FONT_REFERENCE });
+    expect(saved.notes).toContain("Payment: Wise");
+    expect(saved.notes).toContain(`/api/uploads/${FONT_REFERENCE.id}`);
+  });
+});
 
 describe("order request pricing", () => {
   it("uses server-authoritative IDR pricing for a customer request", () => {

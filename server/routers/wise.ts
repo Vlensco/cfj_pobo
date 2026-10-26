@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getOrderRequestByReference } from "../db";
-import { describeOrderLine, recordOnlinePaymentOrder } from "../modules/orders/orderRequests";
+import { recordOnlinePaymentOrder } from "../modules/orders/orderRequests";
 import { convertIdrWithWise, getWiseBankAccount, getWiseCurrencies, isWiseConfigured } from "../modules/payments/wise";
 import { cartItemsSchema, priceCart } from "./cart";
 
@@ -60,14 +60,7 @@ export const wiseRouter = router({
             `Wise transfer amount: ${amount.toFixed(2)} ${currency}`,
             `Rate: 1 IDR = ${rate} ${currency}`,
           ].join("\n"),
-          items: lines.map(line => ({
-            productId: line.productId,
-            name: describeOrderLine(line),
-            quantity: line.quantity,
-            price: line.unitAmount,
-            color: line.color,
-            size: line.size,
-          })),
+          lines,
           subtotal,
           currency: "IDR",
           status: "new",

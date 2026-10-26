@@ -58058,17 +58058,9 @@ async function createOrderRequest(input) {
 async function recordOnlinePaymentOrder(data) {
   const db = await getDb();
   if (!db) return null;
-  const lines = data.items.map((item) => ({
-    productId: item.productId || item.name.toLowerCase().replace(/\s+/g, "-"),
-    name: item.name,
-    quantity: item.quantity || 1,
-    color: item.color || "Standard",
-    size: item.size || "M",
-    unitAmount: item.price,
-    lineTotal: item.price * (item.quantity || 1)
-  }));
+  const { lines } = data;
   const status = data.status || "new";
-  const notes = data.notes?.trim() || null;
+  const notes = [data.notes?.trim(), buildCustomizationRecap(lines)].filter(Boolean).join("\n\n") || null;
   const [inserted] = await db.insert(orderRequests).values({
     reference: data.reference,
     customerName: (data.customerName || "Terrace Customer").trim(),
@@ -58426,14 +58418,7 @@ var nowpaymentsRouter = router({
         customerName: ctx.user?.name ?? void 0,
         email: customerEmail,
         notes: `NOWPayments Invoice: ${invoice.id}`,
-        items: lines.map((line2) => ({
-          productId: line2.productId,
-          name: describeOrderLine(line2),
-          quantity: line2.quantity,
-          price: line2.unitAmount,
-          color: line2.color,
-          size: line2.size
-        })),
+        lines,
         subtotal,
         currency: "IDR",
         status: "new"
@@ -76358,7 +76343,7 @@ var stripeRouter = router({
         customerName,
         email: customerEmail,
         notes: `Stripe Checkout Session: ${session.id}`,
-        items,
+        lines,
         subtotal,
         currency: "IDR",
         status: "new"
@@ -76524,14 +76509,7 @@ var wiseRouter = router({
           `Wise transfer amount: ${amount.toFixed(2)} ${currency}`,
           `Rate: 1 IDR = ${rate} ${currency}`
         ].join("\n"),
-        items: lines.map((line2) => ({
-          productId: line2.productId,
-          name: describeOrderLine(line2),
-          quantity: line2.quantity,
-          price: line2.unitAmount,
-          color: line2.color,
-          size: line2.size
-        })),
+        lines,
         subtotal,
         currency: "IDR",
         status: "new",

@@ -119,7 +119,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   const t = useT();
   const formatPrice = useFormatPrice();
   const { region, isBaseCurrency } = useRegion();
-  const { items, subtotal, orderNotes, setOrderNotes, clearCart } = useCart();
+  const { items, itemCount, subtotal, orderNotes, setOrderNotes, clearCart } = useCart();
   const [stage, setStage] = useState<DrawerStage>("bag");
   const [reference, setReference] = useState("");
   const authQuery = trpc.auth.me.useQuery();
@@ -299,8 +299,9 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
     });
   };
 
-  const bagTitle = items.length
-    ? t(items.length === 1 ? "{count} piece" : "{count} pieces", { count: items.length })
+  // Counts pieces (quantities), matching the "BAG n" counter in the header.
+  const bagTitle = itemCount
+    ? t(itemCount === 1 ? "{count} piece" : "{count} pieces", { count: itemCount })
     : "Your bag is empty";
   const heading = stage === "bag" ? { eyebrow: "Your bag", title: bagTitle } : STAGE_HEADINGS[stage];
   const controlsDisabled = stage !== "bag" || submitRequest.isPending;

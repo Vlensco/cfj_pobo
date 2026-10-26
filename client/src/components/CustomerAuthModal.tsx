@@ -1,7 +1,7 @@
 import { useT } from "@/i18n";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, X } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type AuthTab = "login" | "register";
@@ -30,6 +30,14 @@ export function CustomerAuthModal({ open, onClose }: { open: boolean; onClose: (
     },
     onError: err => toast.error(err.message || t("Failed to sign in")),
   });
+
+  // Escape closes the dialog, as with any modal.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -132,19 +140,21 @@ export function CustomerAuthModal({ open, onClose }: { open: boolean; onClose: (
             />
           </div>
 
-          <div className="auth-input-group">
-            <label>
-              {t("WhatsApp / Phone Number")}{" "}
-              <span className="auth-label-hint">{t(isRegister ? "(recommended)" : "(optional)")}</span>
-            </label>
-            <input
-              type="tel"
-              placeholder="+62 812 3456 7890"
-              value={phone}
-              onChange={event => setPhone(event.target.value)}
-              autoComplete="tel"
-            />
-          </div>
+          {/* Signing in only needs email + password; the phone number is collected at registration. */}
+          {isRegister && (
+            <div className="auth-input-group">
+              <label>
+                {t("WhatsApp / Phone Number")} <span className="auth-label-hint">{t("(recommended)")}</span>
+              </label>
+              <input
+                type="tel"
+                placeholder="+62 812 3456 7890"
+                value={phone}
+                onChange={event => setPhone(event.target.value)}
+                autoComplete="tel"
+              />
+            </div>
+          )}
 
           {isRegister && (
             <div className="auth-benefits-list">

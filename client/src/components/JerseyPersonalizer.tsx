@@ -11,6 +11,14 @@ import React, { useEffect, useState } from "react";
 
 type NamesetMode = "custom" | "ready";
 
+/** Short sleeve label from a catalog name: "1998-03 Serie A Italy Patch" → "Serie A Italy". */
+const patchBadgeLabel = (name: string) =>
+  name
+    .replace(/^[\d\s/.\-–]+/, "")
+    .replace(/\b(official|sleeve|badges?|patch(es)?)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim() || name;
+
 interface JerseyPersonalizerProps {
   product: Product;
   selectedColor: string;
@@ -123,6 +131,14 @@ export function JerseyPersonalizer({
     onClose();
   };
 
+  // Escape closes the personaliser, as with any modal.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Catalog photos are taken at an angle, so the print is previewed on a straight-on drawing of the back.
@@ -134,7 +150,7 @@ export function JerseyPersonalizer({
       colorSource={product.image}
       name={printedName}
       number={printedNumber}
-      patchLabel={selectedPatch?.name}
+      patchLabel={selectedPatch ? patchBadgeLabel(selectedPatch.name) : undefined}
       fontFamily={isCustomNameset ? fontReference?.fontFamily : undefined}
     />
   );

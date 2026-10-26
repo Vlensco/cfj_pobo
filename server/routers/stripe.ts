@@ -47,7 +47,7 @@ export const stripeRouter = router({
           customerName,
           email: customerEmail,
           notes: `Stripe Checkout Session: ${session.id}`,
-          items,
+          lines,
           subtotal,
           currency: "IDR",
           status: "new",

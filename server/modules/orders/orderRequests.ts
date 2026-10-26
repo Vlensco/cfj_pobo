@@ -187,7 +187,8 @@ export async function recordOnlinePaymentOrder(data: {
   email?: string;
   phone?: string;
   notes?: string;
-  items: Array<{ productId?: string; name: string; quantity: number; price: number; color?: string; size?: string }>;
+  /** Server-priced cart lines (from `priceCart`), customisation included. */
+  lines: OrderRequestLine[];
   subtotal: number;
   currency?: string;
   status?: "new" | "contacted";
@@ -196,17 +197,10 @@ export async function recordOnlinePaymentOrder(data: {
   const db = await getDb();
   if (!db) return null;
 
-  const lines = data.items.map(item => ({
-    productId: item.productId || item.name.toLowerCase().replace(/\s+/g, "-"),
-    name: item.name,
-    quantity: item.quantity || 1,
-    color: item.color || "Standard",
-    size: item.size || "M",
-    unitAmount: item.price,
-    lineTotal: item.price * (item.quantity || 1),
-  }));
+  const { lines } = data;
   const status = data.status || "new";
-  const notes = data.notes?.trim() || null;
+  // Same recap as a plain order request, so staff see namesets, patches and font files for paid orders too.
+  const notes = [data.notes?.trim(), buildCustomizationRecap(lines)].filter(Boolean).join("\n\n") || null;
 
   const [inserted] = await db
     .insert(orderRequests)

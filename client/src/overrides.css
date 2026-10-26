@@ -4101,7 +4101,7 @@ textarea:focus-visible {
 }
 
 .personalizer-submit-btn {
-  background: #0284c7 !important;
+  background: var(--pitch) !important;
   color: #ffffff !important;
   border: none !important;
   font-size: 14px !important;
@@ -4110,13 +4110,13 @@ textarea:focus-visible {
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(62, 79, 59, 0.25) !important;
   cursor: pointer;
   transition: all 0.2s ease !important;
 }
 
 .personalizer-submit-btn:hover {
-  background: #0369a1 !important;
+  background: #2f3d2c !important;
   transform: translateY(-1px);
 }
 
@@ -4130,6 +4130,23 @@ textarea:focus-visible {
   border-radius: 3px;
   margin-top: 4px;
   margin-right: 4px;
+}
+
+/* Each piece stays on one line; the badge wraps between pieces instead of inside them. */
+.cart-custom-badge {
+  flex-wrap: wrap;
+  max-width: 100%;
+  row-gap: 2px;
+}
+
+.cart-custom-badge > * {
+  white-space: nowrap;
+}
+
+.cart-custom-badge .cart-font-ref {
+  flex-basis: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nameset-badge {
@@ -4222,10 +4239,31 @@ textarea:focus-visible {
 /* -------------------------------------------------------------
    Customer sign-in modal
    ------------------------------------------------------------- */
+/* Logo and title share one centred column; the close button sits in the corner. */
+.customer-modal-head {
+  justify-content: center;
+  text-align: center;
+  padding-inline: 56px;
+}
+
+.customer-modal-head > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.customer-modal-head .customer-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
 .customer-modal-logo {
-  height: 26px;
+  display: block;
+  width: auto;
+  height: 32px;
+  margin: 0 auto 8px;
   object-fit: contain;
-  margin-bottom: 6px;
 }
 .auth-label-hint {
   color: #777;
@@ -4828,4 +4866,35 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Phones: keep the header on one line and the product gallery inside the screen. */
+@media (max-width: 560px) {
+  .country-currency-trigger .country-trigger-text,
+  .account-btn:not(.is-logged-in) > span {
+    display: none;
+  }
+
+  .country-currency-trigger,
+  .account-btn {
+    white-space: nowrap;
+  }
+
+  .gallery-under {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .gallery-thumbnails {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+  }
+
+  .gallery-thumbnails button {
+    flex: 0 0 auto;
+  }
 }

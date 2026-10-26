@@ -140,3 +140,74 @@ export function parseStructuredDescription(text: string): StructuredDescription 
     notes,
   };
 }
+
+export type RichTextSegment = { text: string; href?: string };
+export interface DescriptionSection {
+  title: string;
+  /** Each item is one bullet, split into plain text and link segments. */
+  items: RichTextSegment[][];
+}
+
+const LINK_MARKER = /\u0001(.*?)\u0002(.*?)\u0003/g;
+const HEADING_MARK = "\u0004";
+const ITEM_MARK = "\u0005";
+
+/** "☑️ CONDITION :" -> "Condition" */
+function cleanSectionTitle(raw: string): string {
+  const title = raw.replace(/^[^A-Za-z0-9]+/, "").replace(/[^A-Za-z0-9)]+$/, "").trim();
+  const isShouting = title === title.toUpperCase();
+  return isShouting ? title.charAt(0) + title.slice(1).toLowerCase() : title;
+}
+
+function toSegments(line: string): RichTextSegment[] {
+  const segments: RichTextSegment[] = [];
+  let cursor = 0;
+  for (const match of Array.from(line.matchAll(LINK_MARKER))) {
+    const before = line.slice(cursor, match.index);
+    if (before) segments.push({ text: before });
+    const [, href, label] = match;
+    // Only real web links are kept clickable; anything else renders as plain text.
+    segments.push(/^https?:\/\//i.test(href) ? { text: label, href } : { text: label });
+    cursor = (match.index ?? 0) + match[0].length;
+  }
+  const rest = line.slice(cursor);
+  if (rest) segments.push({ text: rest });
+  return segments;
+}
+
+/**
+ * Reads a product description written as headings followed by bullet lists
+ * (the format of the imported shirt catalog) into titled sections.
+ * Returns an empty list for descriptions that are not structured that way.
+ */
+export function parseDescriptionSections(html: string | null | undefined): DescriptionSection[] {
+  if (!html || !/<h[1-6]/i.test(html)) return [];
+
+  const marked = html
+    .replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<a\b[^>]*?href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_match, href: string, label: string) =>
+      `\u0001${href}\u0002${label.replace(/<[^>]+>/g, "")}\u0003`
+    )
+    .replace(/<h[1-6][^>]*>/gi, `\n${HEADING_MARK}`)
+    .replace(/<li[^>]*>/gi, `\n${ITEM_MARK}`)
+    .replace(/<\/(h[1-6]|li|p|div|ul|ol)>|<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
+
+  const sections: DescriptionSection[] = [];
+  for (const rawLine of cleanHtmlEntities(marked).split("\n")) {
+    const line = rawLine.replace(/\s+/g, " ").trim();
+    if (!line) continue;
+
+    if (line.startsWith(HEADING_MARK)) {
+      const title = cleanSectionTitle(line.slice(1));
+      if (title) sections.push({ title, items: [] });
+      continue;
+    }
+
+    const text = line.startsWith(ITEM_MARK) ? line.slice(1).trim() : line;
+    const current = sections[sections.length - 1];
+    if (text && current) current.items.push(toSegments(text));
+  }
+
+  return sections.filter(section => section.items.length > 0);
+}

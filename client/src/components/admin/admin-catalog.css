@@ -1,0 +1,150 @@
+/* -------------------------------------------------------------
+   Admin catalog: nameset / patch add-on settings in the product form
+   (the table and modal shell are styled in overrides.css)
+   ------------------------------------------------------------- */
+.admin-form .addon-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+.admin-form .addon-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+}
+.admin-form .addon-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-form .addon-toggle input {
+  width: auto;
+  padding: 0;
+}
+.admin-form .addon-settings .form-row {
+  margin-top: 4px;
+}
+/* -------------------------------------------------------------
+   Admin catalog: status tabs, status labels, activate / deactivate
+   ------------------------------------------------------------- */
+.catalog-status-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px 0 4px;
+}
+.catalog-status-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--chalk);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.catalog-status-tabs button:hover {
+  border-color: var(--pitch);
+}
+.catalog-status-tabs button span {
+  font-weight: 600;
+  color: #6a6c67;
+  font-variant-numeric: tabular-nums;
+}
+.catalog-status-tabs button.active {
+  background: var(--pitch);
+  border-color: var(--pitch);
+  color: #ffffff;
+}
+.catalog-status-tabs button.active span {
+  color: rgba(255, 255, 255, 0.75);
+}
+.catalog-status-tabs p {
+  margin: 0 0 0 auto;
+  font-size: 11px;
+  color: #6a6c67;
+}
+.admin-products-table .status-pill {
+  display: inline-block;
+  white-space: nowrap;
+}
+.admin-products-table .status-pill.archived {
+  background: #ececea;
+  color: #55574f;
+}
+.admin-products-table .status-pill.suspended {
+  background: #f6e7e4;
+  color: #8a2f22;
+}
+.admin-products-table .status-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #6a6c67;
+  white-space: nowrap;
+}
+.admin-products-table tr.is-inactive .product-thumb,
+.admin-products-table tr.is-inactive .product-cell-main strong {
+  opacity: 0.55;
+}
+.status-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 104px;
+  padding: 6px 10px;
+  border: 1px solid var(--chalk);
+  background: #ffffff;
+  color: #555751;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.status-toggle-btn.activate {
+  border-color: #2d643d;
+  color: #2d643d;
+}
+.status-toggle-btn:hover:not(:disabled) {
+  border-color: var(--pitch);
+  color: var(--ink);
+}
+.status-toggle-btn.activate:hover:not(:disabled) {
+  background: #2d643d;
+  border-color: #2d643d;
+  color: #ffffff;
+}
+.status-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+@media (max-width: 720px) {
+  .catalog-status-tabs p {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+.admin-form .addon-settings select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 13px;
+}

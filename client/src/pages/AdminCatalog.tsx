@@ -1,545 +1,379 @@
-import { FadeIn, PageEntrance } from "@/components/MotionReveal";
+import "@/components/admin/admin-catalog.css";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { ProductFormModal, type ProductFormData } from "@/components/admin/ProductFormModal";
+import { PageEntrance } from "@/components/MotionReveal";
 import { PaginationControl } from "@/components/PaginationControl";
+import { toIdrPrice } from "@/data/catalog";
 import { formatPrice } from "@/lib/money";
 import { trpc } from "@/lib/trpc";
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Boxes,
-  CheckCircle2,
-  Edit,
-  ExternalLink,
-  Layers,
-  LoaderCircle,
-  LogOut,
-  PackagePlus,
-  Plus,
-  RotateCcw,
-  Search,
-  SlidersHorizontal,
-  Trash2,
-  X,
-} from "lucide-react";
-import { FormEvent, useState } from "react";
+import { parseProductCustomizationMeta, serializeProductCustomizationMeta } from "@shared/customization";
+import { Boxes, Edit, Eye, EyeOff, LoaderCircle, Plus, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 
-interface ProductFormData {
-  handle: string;
-  title: string;
-  price: string;
-  type: string;
-  tags: string;
-  imageUrl: string;
-  bodyHtml: string;
-}
-
-const DEFAULT_FORM: ProductFormData = {
-  handle: "",
-  title: "",
-  price: "1888000",
-  type: "Apparel",
-  tags: "Drop 01",
-  imageUrl: "/manus-storage/terrace-junction-v2_75e8572e.jpg",
-  bodyHtml: "Original terrace apparel crafted from premium heavyweight structured cotton.",
-};
+type PageSize = (typeof PAGE_SIZES)[number];
+type ModalState = { mode: "create" } | { mode: "edit"; product: ProductFormData } | null;
+type StatusFilter = (typeof STATUS_FILTERS)[number]["value"];
+type ProductState = "active" | "draft" | "archived" | "suspended";
 
 interface AdminProductItem {
   handle: string;
   title: string;
   bodyHtml?: string | null;
-  vendor?: string | null;
   type?: string | null;
   tags?: string | null;
   published?: string | boolean | null;
+  status?: string | null;
   primaryVariant?: { price?: string | number | null } | null;
   primaryImage?: { src?: string | null } | null;
 }
 
+const PAGE_SIZES = [10, 15] as const;
+const STATUS_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+] as const;
+const STATE_LABELS: Record<ProductState, { label: string; hint: string }> = {
+  active: { label: "Active", hint: "Visible to customers" },
+  draft: { label: "Draft", hint: "Hidden from customers" },
+  archived: { label: "Archived", hint: "Hidden from customers" },
+  suspended: { label: "Suspended", hint: "Hidden from customers" },
+};
+const FALLBACK_IMAGE = "/manus-storage/terrace-junction-v2_75e8572e.jpg";
+const DEFAULT_NAMESET_PRICE = 75000;
+
+const NEW_PRODUCT: ProductFormData = {
+  handle: "",
+  title: "",
+  price: "1888000",
+  type: "Apparel",
+  tags: "Drop 01",
+  imageUrl: FALLBACK_IMAGE,
+  bodyHtml: "Original terrace apparel crafted from premium heavyweight structured cotton.",
+  hasNameset: true,
+  namesetPrice: String(DEFAULT_NAMESET_PRICE),
+  patchSku: "",
+};
+
+const isPublished = (value: AdminProductItem["published"]) =>
+  value === null || value === undefined || value === true || String(value).toLowerCase() === "true";
+
+/** Only `active` + published pieces are shown to customers; everything else is hidden. */
+function getProductState(item: AdminProductItem): ProductState {
+  const status = (item.status || "active").toLowerCase();
+  if (status === "archived" || status === "suspended") return status;
+  return status === "active" && isPublished(item.published) ? "active" : "draft";
+}
+
+function toFormData(item: AdminProductItem): ProductFormData {
+  const meta = parseProductCustomizationMeta(item.tags);
+  return {
+    handle: item.handle,
+    title: item.title,
+    price: item.primaryVariant?.price ? String(item.primaryVariant.price) : NEW_PRODUCT.price,
+    type: item.type || "Apparel",
+    tags: item.tags || "Drop 01",
+    imageUrl: item.primaryImage?.src || "",
+    bodyHtml: item.bodyHtml || "",
+    hasNameset: meta.hasNameset,
+    namesetPrice: String(meta.namesetPrice),
+    patchSku: meta.patchSku,
+  };
+}
+
+/** Folds the nameset / patch settings back into the product's tag list, where they are stored. */
+const withCustomizationTags = (values: ProductFormData) =>
+  serializeProductCustomizationMeta(values.tags, {
+    hasNameset: values.hasNameset,
+    namesetPrice: Number(values.namesetPrice || DEFAULT_NAMESET_PRICE),
+    patchSku: values.patchSku,
+  });
+
+function PageSizeSelector({ value, onChange }: { value: PageSize; onChange: (size: PageSize) => void }) {
+  return (
+    <div className="page-size-selector">
+      <span>Per page:</span>
+      {PAGE_SIZES.map(size => (
+        <button key={size} type="button" className={value === size ? "active" : ""} onClick={() => onChange(size)}>
+          {size}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminCatalog() {
-  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const authQuery = trpc.auth.me.useQuery();
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: async () => {
-      await utils.auth.me.invalidate();
-      toast.success("Signed out successfully");
-      setLocation("/admin/login");
-    },
-  });
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<10 | 15>(15);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
-  const [formData, setFormData] = useState<ProductFormData>(DEFAULT_FORM);
+  const [pageSize, setPageSize] = useState<PageSize>(15);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [modal, setModal] = useState<ModalState>(null);
 
-  const catalogQuery = trpc.adminProducts.list.useQuery({
-    search: search.trim() || undefined,
-    page,
-    pageSize,
-  });
+  const isAdmin = authQuery.data?.role === "admin";
+  const searchTerm = search.trim() || undefined;
+  const catalogQuery = trpc.adminProducts.list.useQuery({ search: searchTerm, status: statusFilter, page, pageSize });
+  const countsQuery = trpc.adminProducts.statusCounts.useQuery({ search: searchTerm }, { enabled: isAdmin });
+  const products = (catalogQuery.data?.products ?? []) as AdminProductItem[];
+  const totalCount = catalogQuery.data?.total ?? 0;
 
-  const productsList = (catalogQuery.data?.products || []) as unknown as AdminProductItem[];
-  const totalPages = catalogQuery.data?.totalPages || 1;
-  const totalCount = catalogQuery.data?.total || 0;
+  const refreshCatalog = () =>
+    Promise.all([utils.adminProducts.list.invalidate(), utils.adminProducts.statusCounts.invalidate()]);
+
+  const refreshAndClose = async (message: string) => {
+    await refreshCatalog();
+    toast.success(message);
+    setModal(null);
+  };
 
   const createMutation = trpc.adminProducts.create.useMutation({
-    onSuccess: async () => {
-      await utils.adminProducts.list.invalidate();
-      toast.success("New piece added to catalog");
-      setIsCreateOpen(false);
-      setFormData(DEFAULT_FORM);
-    },
-    onError: err => toast.error(err.message || "Failed to create product"),
+    onSuccess: () => refreshAndClose("New piece added to catalog"),
+    onError: error => toast.error(error.message || "Failed to create product"),
   });
-
   const updateMutation = trpc.adminProducts.update.useMutation({
-    onSuccess: async () => {
-      await utils.adminProducts.list.invalidate();
-      toast.success("Piece updated successfully");
-      setEditingProduct(null);
-    },
-    onError: err => toast.error(err.message || "Failed to update product"),
+    onSuccess: () => refreshAndClose("Piece updated successfully"),
+    onError: error => toast.error(error.message || "Failed to update product"),
   });
-
   const deleteMutation = trpc.adminProducts.delete.useMutation({
-    onSuccess: async () => {
-      await utils.adminProducts.list.invalidate();
-      toast.success("Piece removed from catalog");
-    },
-    onError: err => toast.error(err.message || "Failed to delete product"),
+    onSuccess: () => refreshAndClose("Piece removed from catalog"),
+    onError: error => toast.error(error.message || "Failed to delete product"),
   });
 
-  const handleCreateSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate({
-      ...formData,
-      price: formData.price,
-    });
+  const setActiveMutation = trpc.adminProducts.setActive.useMutation({
+    onSuccess: async (_result, variables) => {
+      await refreshCatalog();
+      toast.success(variables.active ? "Piece is now visible to customers" : "Piece hidden from customers");
+    },
+    onError: error => toast.error(error.message || "Failed to change status"),
+  });
+
+  const changeStatusFilter = (value: StatusFilter) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+  const changePageSize = (size: PageSize) => {
+    setPageSize(size);
+    setPage(1);
   };
 
-  const handleUpdateSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-    updateMutation.mutate({
-      handle: editingProduct.handle,
-      title: editingProduct.title,
-      price: editingProduct.price,
-      type: editingProduct.type,
-      tags: editingProduct.tags,
-      imageUrl: editingProduct.imageUrl,
-      bodyHtml: editingProduct.bodyHtml,
-    });
+  const submitProduct = (values: ProductFormData) => {
+    const { hasNameset, namesetPrice, patchSku, ...product } = values;
+    const payload = { ...product, tags: withCustomizationTags(values) };
+    if (modal?.mode === "edit") updateMutation.mutate(payload);
+    else createMutation.mutate(payload);
   };
 
-  const handleDelete = (handle: string, title: string) => {
-    if (window.confirm(`Are you sure you want to remove "${title}" from the catalog?`)) {
-      deleteMutation.mutate({ handle });
+  const deleteProduct = (item: AdminProductItem) => {
+    if (window.confirm(`Are you sure you want to remove "${item.title}" from the catalog?`)) {
+      deleteMutation.mutate({ handle: item.handle });
     }
   };
+
+  if (authQuery.isLoading) {
+    return (
+      <main className="admin-gate">
+        <LoaderCircle className="button-spinner" />
+        <p>Checking access…</p>
+      </main>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <main className="admin-gate">
+        <Boxes size={32} strokeWidth={1.2} />
+        <p className="eyebrow">CFJ administration</p>
+        <h1>Sign in to manage the catalog.</h1>
+        <p>This area is restricted to store administrators.</p>
+        <Link href="/admin/login" className="primary-button">
+          Enter Staff Login
+        </Link>
+      </main>
+    );
+  }
+
+  const firstShown = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
 
   return (
     <PageEntrance>
       <main className="admin-page">
-        {/* Header */}
-        <header className="admin-header">
-          <div>
-            <p className="eyebrow">CFJ Concierge / Catalog Management</p>
-            <h1>Product Index</h1>
-            <p>
-              Manage piece descriptions, prices, imagery, and inventory across Drop 01 and the archival database.
-            </p>
-          </div>
+        <AdminHeader
+          active="catalog"
+          eyebrow="CFJ Concierge / Catalog Management"
+          title="Product Index"
+          description="Manage piece descriptions, prices, imagery, and inventory across Drop 01 and the archival database."
+        />
 
-          <div className="admin-nav-actions">
-            <Link href="/admin/orders" className="admin-nav-tab">
-              Order Requests
-            </Link>
-            <Link href="/admin/catalog" className="admin-nav-tab active">
-              Catalog (CMS)
-            </Link>
-            <Link href="/" className="admin-store-link">
-              Storefront <ExternalLink size={12} />
-            </Link>
-            <button
-              className="admin-logout-btn"
-              onClick={() => logoutMutation.mutate()}
-              title="Sign out of Admin"
-            >
-              <LogOut size={14} />
-            </button>
-          </div>
-        </header>
-
-        {/* Toolbar */}
         <section className="admin-querybar">
           <div className="admin-search">
             <Search size={15} />
             <input
               type="text"
+              aria-label="Search pieces"
               placeholder="Search pieces by title or handle…"
               value={search}
-              onChange={e => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={event => changeSearch(event.target.value)}
             />
           </div>
 
           <div className="admin-catalog-toolbar-actions">
-            <div className="page-size-selector">
-              <span>Per page:</span>
-              <button
-                type="button"
-                className={pageSize === 10 ? "active" : ""}
-                onClick={() => {
-                  setPageSize(10);
-                  setPage(1);
-                }}
-              >
-                10
-              </button>
-              <button
-                type="button"
-                className={pageSize === 15 ? "active" : ""}
-                onClick={() => {
-                  setPageSize(15);
-                  setPage(1);
-                }}
-              >
-                15
-              </button>
-            </div>
-
-            <button className="primary-button add-product-btn" onClick={() => setIsCreateOpen(true)}>
+            <PageSizeSelector value={pageSize} onChange={changePageSize} />
+            <button className="primary-button add-product-btn" onClick={() => setModal({ mode: "create" })}>
               <Plus size={16} /> Add New Piece
             </button>
           </div>
         </section>
 
-        {/* Product Table */}
+        <div className="catalog-status-tabs" role="tablist" aria-label="Filter pieces by status">
+          {STATUS_FILTERS.map(filter => (
+            <button
+              key={filter.value}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === filter.value}
+              className={statusFilter === filter.value ? "active" : ""}
+              onClick={() => changeStatusFilter(filter.value)}
+            >
+              {filter.label}
+              <span>{countsQuery.data?.[filter.value] ?? "–"}</span>
+            </button>
+          ))}
+          <p>Only active pieces are shown to customers.</p>
+        </div>
+
         <section className="catalog-admin-section">
           {catalogQuery.isLoading ? (
             <div className="admin-loading">
               <LoaderCircle size={28} className="button-spinner" />
               <span>Fetching catalog entries…</span>
             </div>
-          ) : !catalogQuery.data?.products.length ? (
+          ) : !products.length ? (
             <div className="admin-empty">
               <Boxes size={32} strokeWidth={1.25} />
               <h2>No pieces found.</h2>
               <p>Try adjusting your search query or add a new piece to the collection.</p>
-              <button className="primary-button" onClick={() => setIsCreateOpen(true)}>
+              <button className="primary-button" onClick={() => setModal({ mode: "create" })}>
                 Add First Piece
               </button>
             </div>
           ) : (
-            <div className="admin-products-table-wrap">
-              <table className="admin-products-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Type</th>
-                    <th>Slug / Handle</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th className="actions-cell">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {productsList.map(item => {
-                    const priceRaw = Number(item.primaryVariant?.price || 1888000);
-                    const priceNum = priceRaw < 5000 ? Math.round(priceRaw * 20000) : priceRaw;
-                    const imgSrc = item.primaryImage?.src || "/manus-storage/terrace-junction-v2_75e8572e.jpg";
-                    return (
-                      <tr key={item.handle}>
-                        <td className="product-cell-main">
-                          <div className="product-thumb">
-                            {imgSrc ? (
-                              <img src={imgSrc} alt={item.title} />
-                            ) : (
-                              <div className="no-thumb" />
-                            )}
-                          </div>
-                          <div>
-                            <strong>{item.title}</strong>
-                            <small>{item.tags || "Drop 01"}</small>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="type-tag">{item.type || "Apparel"}</span>
-                        </td>
-                        <td>
-                          <code>{item.handle}</code>
-                        </td>
-                        <td>
-                          <strong>{formatPrice(priceNum)}</strong>
-                        </td>
-                        <td>
-                          <span className={`status-pill ${item.published ? "published" : "draft"}`}>
-                            {item.published ? "Active" : "Draft"}
-                          </span>
-                        </td>
-                        <td className="actions-cell">
-                          <button
-                            className="icon-action-btn"
-                            title="Edit Piece"
-                            onClick={() =>
-                              setEditingProduct({
-                                handle: item.handle,
-                                title: item.title,
-                                price: item.primaryVariant?.price ? String(item.primaryVariant.price) : "1888000",
-                                type: item.type || "Apparel",
-                                tags: item.tags || "Drop 01",
-                                imageUrl: item.primaryImage?.src || "",
-                                bodyHtml: item.bodyHtml || "",
-                              })
-                            }
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            className="icon-action-btn delete"
-                            title="Delete Piece"
-                            onClick={() => handleDelete(item.handle, item.title)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination Section */}
-          {Boolean(catalogQuery.data?.products?.length) && (
-            <div className="pagination-section">
-              <div className="pagination-summary">
-                <span>
-                  Showing {totalCount === 0 ? 0 : (page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} of {totalCount} pieces
-                </span>
+            <>
+              <div className="admin-products-table-wrap">
+                <table className="admin-products-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Type</th>
+                      <th>Slug / Handle</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th className="actions-cell">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map(item => {
+                      const state = getProductState(item);
+                      const isActive = state === "active";
+                      const isToggling = setActiveMutation.isPending && setActiveMutation.variables?.handle === item.handle;
+                      return (
+                        <tr key={item.handle} className={isActive ? "" : "is-inactive"}>
+                          <td className="product-cell-main">
+                            <div className="product-thumb">
+                              <img src={item.primaryImage?.src || FALLBACK_IMAGE} alt={item.title} />
+                            </div>
+                            <div>
+                              <strong>{item.title}</strong>
+                              <small>{item.tags || "Drop 01"}</small>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="type-tag">{item.type || "Apparel"}</span>
+                          </td>
+                          <td>
+                            <code>{item.handle}</code>
+                          </td>
+                          <td>
+                            <strong>{formatPrice(toIdrPrice(item.primaryVariant?.price))}</strong>
+                          </td>
+                          <td>
+                            <span className={`status-pill ${isActive ? "published" : state}`}>
+                              {STATE_LABELS[state].label}
+                            </span>
+                            <small className="status-hint">{STATE_LABELS[state].hint}</small>
+                          </td>
+                          <td className="actions-cell">
+                            <button
+                              className={`status-toggle-btn ${isActive ? "deactivate" : "activate"}`}
+                              title={isActive ? "Hide this piece from customers" : "Show this piece to customers"}
+                              disabled={isToggling}
+                              onClick={() => setActiveMutation.mutate({ handle: item.handle, active: !isActive })}
+                            >
+                              {isToggling ? (
+                                <LoaderCircle size={13} className="button-spinner" />
+                              ) : isActive ? (
+                                <EyeOff size={13} />
+                              ) : (
+                                <Eye size={13} />
+                              )}
+                              {isActive ? "Deactivate" : "Activate"}
+                            </button>
+                            <button
+                              className="icon-action-btn"
+                              title="Edit Piece"
+                              onClick={() => setModal({ mode: "edit", product: toFormData(item) })}
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              className="icon-action-btn delete"
+                              title="Delete Piece"
+                              disabled={deleteMutation.isPending}
+                              onClick={() => deleteProduct(item)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
-              <PaginationControl
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={(newPage) => setPage(newPage)}
-              />
-
-              <div className="page-size-selector">
-                <span>Per page:</span>
-                <button
-                  type="button"
-                  className={pageSize === 10 ? "active" : ""}
-                  onClick={() => {
-                    setPageSize(10);
-                    setPage(1);
-                  }}
-                >
-                  10
-                </button>
-                <button
-                  type="button"
-                  className={pageSize === 15 ? "active" : ""}
-                  onClick={() => {
-                    setPageSize(15);
-                    setPage(1);
-                  }}
-                >
-                  15
-                </button>
+              <div className="pagination-section">
+                <div className="pagination-summary">
+                  <span>
+                    Showing {firstShown}–{Math.min(page * pageSize, totalCount)} of {totalCount} pieces
+                  </span>
+                </div>
+                <PaginationControl
+                  currentPage={page}
+                  totalPages={catalogQuery.data?.totalPages ?? 1}
+                  onPageChange={setPage}
+                />
+                <PageSizeSelector value={pageSize} onChange={changePageSize} />
               </div>
-            </div>
+            </>
           )}
         </section>
 
-        {/* Create Modal */}
-        {isCreateOpen && (
-          <div className="admin-modal-overlay" onClick={() => setIsCreateOpen(false)}>
-            <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <div>
-                  <p className="eyebrow">Catalog CMS / Drop 01</p>
-                  <h2>Add New Piece</h2>
-                </div>
-                <button className="icon-button" onClick={() => setIsCreateOpen(false)}>
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateSubmit} className="admin-form">
-                <div className="form-row">
-                  <label>
-                    Piece Title
-                    <input
-                      type="text"
-                      required
-                      value={formData.title}
-                      onChange={e => {
-                        const title = e.target.value;
-                        const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                        setFormData(d => ({ ...d, title, handle: d.handle ? d.handle : handle }));
-                      }}
-                      placeholder="e.g. Concourse Overcoat"
-                    />
-                  </label>
-
-                  <label>
-                    Handle (Slug)
-                    <input
-                      type="text"
-                      required
-                      value={formData.handle}
-                      onChange={e => setFormData(d => ({ ...d, handle: e.target.value }))}
-                      placeholder="concourse-overcoat"
-                    />
-                  </label>
-                </div>
-
-                <div className="form-row">
-                  <label>
-                    Price (IDR)
-                    <input
-                      type="number"
-                      required
-                      value={formData.price}
-                      onChange={e => setFormData(d => ({ ...d, price: e.target.value }))}
-                      placeholder="1888000"
-                    />
-                  </label>
-
-                  <label>
-                    Category / Type
-                    <input
-                      type="text"
-                      value={formData.type}
-                      onChange={e => setFormData(d => ({ ...d, type: e.target.value }))}
-                      placeholder="Outerwear"
-                    />
-                  </label>
-                </div>
-
-                <label>
-                  Image Asset Path / URL
-                  <input
-                    type="text"
-                    value={formData.imageUrl}
-                    onChange={e => setFormData(d => ({ ...d, imageUrl: e.target.value }))}
-                    placeholder="/manus-storage/terrace-junction-v2_75e8572e.jpg"
-                  />
-                </label>
-
-                <label>
-                  Editorial Story / Description
-                  <textarea
-                    rows={3}
-                    value={formData.bodyHtml}
-                    onChange={e => setFormData(d => ({ ...d, bodyHtml: e.target.value }))}
-                    placeholder="Details on the fabric, fit, and origin of the design..."
-                  />
-                </label>
-
-                <div className="modal-actions">
-                  <button type="button" className="text-button" onClick={() => setIsCreateOpen(false)}>
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={`primary-button ${createMutation.isPending ? "is-loading" : ""}`}
-                    disabled={createMutation.isPending}
-                  >
-                    {createMutation.isPending ? "Publishing..." : "Publish to Catalog"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Modal */}
-        {editingProduct && (
-          <div className="admin-modal-overlay" onClick={() => setEditingProduct(null)}>
-            <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <div>
-                  <p className="eyebrow">Catalog CMS / Edit Piece</p>
-                  <h2>{editingProduct.title}</h2>
-                </div>
-                <button className="icon-button" onClick={() => setEditingProduct(null)}>
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateSubmit} className="admin-form">
-                <label>
-                  Piece Title
-                  <input
-                    type="text"
-                    required
-                    value={editingProduct.title}
-                    onChange={e => setEditingProduct(d => (d ? { ...d, title: e.target.value } : null))}
-                  />
-                </label>
-
-                <div className="form-row">
-                  <label>
-                    Price (IDR)
-                    <input
-                      type="number"
-                      required
-                      value={editingProduct.price}
-                      onChange={e => setEditingProduct(d => (d ? { ...d, price: e.target.value } : null))}
-                    />
-                  </label>
-
-                  <label>
-                    Category / Type
-                    <input
-                      type="text"
-                      value={editingProduct.type}
-                      onChange={e => setEditingProduct(d => (d ? { ...d, type: e.target.value } : null))}
-                    />
-                  </label>
-                </div>
-
-                <label>
-                  Image Asset Path / URL
-                  <input
-                    type="text"
-                    value={editingProduct.imageUrl}
-                    onChange={e => setEditingProduct(d => (d ? { ...d, imageUrl: e.target.value } : null))}
-                  />
-                </label>
-
-                <label>
-                  Editorial Story / Description
-                  <textarea
-                    rows={3}
-                    value={editingProduct.bodyHtml}
-                    onChange={e => setEditingProduct(d => (d ? { ...d, bodyHtml: e.target.value } : null))}
-                  />
-                </label>
-
-                <div className="modal-actions">
-                  <button type="button" className="text-button" onClick={() => setEditingProduct(null)}>
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={`primary-button ${updateMutation.isPending ? "is-loading" : ""}`}
-                    disabled={updateMutation.isPending}
-                  >
-                    {updateMutation.isPending ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+        {modal && (
+          <ProductFormModal
+            key={modal.mode === "edit" ? modal.product.handle : "new"}
+            mode={modal.mode}
+            initialValues={modal.mode === "edit" ? modal.product : NEW_PRODUCT}
+            isSaving={createMutation.isPending || updateMutation.isPending}
+            onSubmit={submitProduct}
+            onClose={() => setModal(null)}
+          />
         )}
       </main>
     </PageEntrance>

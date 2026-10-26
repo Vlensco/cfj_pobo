@@ -1,30 +1,16 @@
 import { FadeIn, PageEntrance } from "@/components/MotionReveal";
 import { trpc } from "@/lib/trpc";
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  KeyRound,
-  LoaderCircle,
-  Lock,
-  Shield,
-  ShieldCheck,
-  User,
-  UserCheck,
-} from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Eye, EyeOff, KeyRound, LoaderCircle, Lock, User, UserCheck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 
 export default function AdminLogin() {
-  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const authQuery = trpc.auth.me.useQuery();
 
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = trpc.auth.loginLocalAdmin.useMutation({
@@ -38,8 +24,9 @@ export default function AdminLogin() {
     },
   });
 
-  // If already logged in, show redirect prompt
-  if (authQuery.data && authQuery.data.role === "admin") {
+  const admin = authQuery.data?.role === "admin" ? authQuery.data : null;
+
+  if (admin) {
     return (
       <PageEntrance>
         <main className="admin-login-page">
@@ -48,8 +35,10 @@ export default function AdminLogin() {
               <UserCheck size={32} className="login-badge-icon success" />
             </div>
             <p className="eyebrow">Authenticated Admin</p>
-            <h1>Logged in as {authQuery.data.name || authQuery.data.email || "Admin"}</h1>
-            <p className="login-desc">Anda memiliki hak akses administratif penuh untuk pengelolaan pesanan & katalog toko CFJ (cfjersey).</p>
+            <h1>Logged in as {admin.name || admin.email || "Admin"}</h1>
+            <p className="login-desc">
+              Anda memiliki hak akses administratif penuh untuk pengelolaan pesanan & katalog toko CFJ (cfjersey).
+            </p>
             <div className="login-actions">
               <Link href="/admin/orders" className="primary-button full-width">
                 Kelola Pesanan (Order Dashboard) <ArrowUpRight size={16} />
@@ -67,20 +56,9 @@ export default function AdminLogin() {
     );
   }
 
-  const handleLogin = (e: FormEvent) => {
-    e.preventDefault();
-    loginMutation.mutate({
-      username: username.trim(),
-      password: password.trim(),
-      email: username.includes("@") ? username.trim() : "admin@cfjersey.com",
-      name: "CFJ Administrator",
-    });
-  };
-
-  const fillDefaultCredentials = () => {
-    setUsername("admin");
-    setPassword("admin123");
-    toast.info("Kredensial admin diisi otomatis (admin / admin123)");
+  const handleLogin = (event: FormEvent) => {
+    event.preventDefault();
+    loginMutation.mutate({ username: username.trim(), password });
   };
 
   return (
@@ -98,107 +76,40 @@ export default function AdminLogin() {
           <p className="eyebrow">CFJ Staff Access</p>
           <h1>Admin Portal Login</h1>
           <p className="login-desc">
-            Masuk untuk memproses pesanan masuk, memantau pembayaran otomatis (Stripe, Paddle, Crypto), dan memperbarui katalog koleksi.
+            Masuk untuk memproses pesanan masuk, memantau pembayaran otomatis (Wise, Crypto), dan memperbarui
+            katalog koleksi.
           </p>
-
-          {/* Credentials Helper Badge */}
-          <div
-            style={{
-              backgroundColor: "var(--muted)",
-              border: "1px solid var(--border)",
-              borderRadius: "4px",
-              padding: "12px 14px",
-              marginBottom: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "8px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <ShieldCheck size={18} style={{ color: "var(--primary)" }} />
-              <div style={{ fontSize: "0.8rem", textAlign: "left" }}>
-                <span style={{ color: "var(--muted-foreground)" }}>Akun Default: </span>
-                <strong style={{ fontFamily: "monospace", color: "var(--foreground)" }}>admin</strong>
-                <span style={{ color: "var(--muted-foreground)" }}> / </span>
-                <strong style={{ fontFamily: "monospace", color: "var(--foreground)" }}>admin123</strong>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={fillDefaultCredentials}
-              style={{
-                fontSize: "0.75rem",
-                padding: "4px 8px",
-                borderRadius: "2px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--card)",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
-              Isi Cepat
-            </button>
-          </div>
 
           <form onSubmit={handleLogin} className="login-form">
             <label>
               Username / Email Admin
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <div className="login-field">
                 <input
                   type="text"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={event => setUsername(event.target.value)}
                   required
-                  placeholder="admin"
                   autoComplete="username"
-                  style={{ width: "100%", paddingLeft: "36px" }}
                 />
-                <User
-                  size={16}
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    color: "var(--muted-foreground)",
-                    pointerEvents: "none",
-                  }}
-                />
+                <User size={16} className="login-field-icon" />
               </div>
             </label>
 
             <label>
               Password
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <div className="login-field has-toggle">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={event => setPassword(event.target.value)}
                   required
-                  placeholder="admin123"
                   autoComplete="current-password"
-                  style={{ width: "100%", paddingLeft: "36px", paddingRight: "36px" }}
                 />
-                <Lock
-                  size={16}
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    color: "var(--muted-foreground)",
-                    pointerEvents: "none",
-                  }}
-                />
+                <Lock size={16} className="login-field-icon" />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--muted-foreground)",
-                    padding: "4px",
-                  }}
+                  className="login-password-toggle"
+                  onClick={() => setShowPassword(value => !value)}
                   title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -208,9 +119,8 @@ export default function AdminLogin() {
 
             <button
               type="submit"
-              className={`primary-button full-width ${loginMutation.isPending ? "is-loading" : ""}`}
+              className={`primary-button full-width login-submit ${loginMutation.isPending ? "is-loading" : ""}`}
               disabled={loginMutation.isPending}
-              style={{ marginTop: "12px" }}
             >
               {loginMutation.isPending ? (
                 <>

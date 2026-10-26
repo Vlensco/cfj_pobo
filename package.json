@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/vercelHandler.ts --bundle --platform=node --format=esm --target=node18 \"--banner:js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=api/index.js",
+    "build:vps": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
@@ -13,15 +14,13 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:migrate:supabase": "tsx server/migrateToSupabase.ts",
-    "db:import": "tsx server/scripts/import-csv.ts"
+    "db:import": "tsx server/scripts/import-csv.ts",
+    "db:init": "tsx server/scripts/init-db.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
     "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@hookform/resolvers": "^5.2.2",
-    "@paddle/paddle-js": "^1.6.5",
-    "@paddle/paddle-node-sdk": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",

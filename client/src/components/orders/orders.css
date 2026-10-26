@@ -1,0 +1,636 @@
+/* -------------------------------------------------------------
+   Order tracking page (/orders, /track, /my-orders)
+   Every rule is scoped under .order-track so it wins over the
+   global button styles without needing inline styles.
+   ------------------------------------------------------------- */
+.order-track {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 20px 100px;
+}
+
+/* ---- Top bar & header ---- */
+.order-track .ot-topbar {
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.order-track .ot-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.order-track .ot-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.order-track .ot-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.order-track .ot-eyebrow {
+  letter-spacing: 0.15em;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.order-track .ot-header h1 {
+  font-family: serif;
+  font-size: 2.3rem;
+  font-weight: normal;
+  margin: 6px 0 10px;
+}
+.order-track .ot-lede {
+  color: var(--muted-foreground);
+  font-size: 0.92rem;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* ---- Search ---- */
+.order-track .ot-search {
+  display: flex;
+  gap: 8px;
+  max-width: 520px;
+  margin: 24px auto 0;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+.order-track .ot-search:focus-within {
+  border-color: var(--pitch);
+}
+.order-track .ot-search-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  padding-left: 12px;
+}
+.order-track .ot-search-field svg {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.order-track .ot-search-field input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-family: monospace;
+}
+.order-track .ot-search-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+/* ---- Buttons ---- */
+.order-track .ot-btn {
+  font-size: 0.85rem;
+  padding: 8px 16px;
+}
+.order-track .ot-btn-sm {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+}
+.order-track .ot-btn,
+.order-track .ot-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.order-track .ot-button-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.order-track .ot-icon-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+/* ---- Loading, error & empty states ---- */
+.order-track .ot-state {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--muted-foreground);
+}
+.order-track .ot-state svg {
+  color: var(--primary);
+  margin: 0 auto 16px;
+}
+.order-track .ot-error,
+.order-track .ot-empty {
+  border-radius: 4px;
+  text-align: center;
+}
+.order-track .ot-error {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background-color: rgba(239, 68, 68, 0.05);
+  padding: 32px;
+  margin-bottom: 40px;
+}
+.order-track .ot-empty {
+  border: 1px dashed var(--border);
+  background-color: var(--card);
+  padding: 60px 20px;
+}
+.order-track .ot-error > svg {
+  color: #ef4444;
+  margin: 0 auto 12px;
+}
+.order-track .ot-empty > svg {
+  color: var(--muted-foreground);
+  margin: 0 auto 16px;
+}
+.order-track .ot-error h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #b91c1c;
+  margin-bottom: 8px;
+}
+.order-track .ot-empty h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.order-track .ot-error p,
+.order-track .ot-empty p {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  max-width: 480px;
+  margin: 0 auto 20px;
+}
+
+/* ---- Shared card pieces ---- */
+.order-track .ot-card {
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+.order-track .ot-label {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.order-track .ot-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+/* The status colour comes from the API and is passed in as --status-color. */
+.order-track .ot-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--status-color);
+  background-color: color-mix(in srgb, var(--status-color) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-color) 20%, transparent);
+}
+.order-track .ot-status-pill.is-compact {
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  border-color: transparent;
+}
+
+/* ---- Order lines (shared by the detail view and the history cards) ---- */
+.order-track .ot-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.order-track .ot-line:first-child {
+  padding-top: 0;
+}
+.order-track .ot-line:last-child {
+  border-bottom: none;
+}
+.order-track .ot-lines.is-compact .ot-line {
+  padding: 12px 0;
+}
+.order-track .ot-lines.is-compact .ot-line:first-child {
+  padding-top: 0;
+}
+.order-track .ot-lines.is-compact .ot-line:last-child {
+  padding-bottom: 0;
+}
+.order-track .ot-line-main {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.order-track .ot-line-thumb {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+.order-track .ot-line h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.order-track .ot-line-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.order-track .ot-line-price {
+  text-align: right;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.order-track .ot-line-price small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+/* ---- Single order: banner ---- */
+.order-track .ot-card-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--muted);
+}
+.order-track .ot-reference-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.order-track .ot-reference {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--foreground);
+}
+.order-track .ot-banner-status {
+  text-align: right;
+}
+.order-track .ot-banner-status .ot-meta {
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+
+/* ---- Single order: sections & stepper ---- */
+.order-track .ot-section {
+  padding: 32px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.order-track .ot-section.is-items {
+  padding: 24px;
+  border-bottom: none;
+}
+.order-track .ot-section-title {
+  margin-bottom: 24px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted-foreground);
+}
+.order-track .ot-section.is-items .ot-section-title {
+  margin-bottom: 16px;
+}
+.order-track .ot-stepper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 16px;
+}
+.order-track .ot-stepper-track {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  right: 24px;
+  height: 3px;
+  background-color: var(--border);
+  z-index: 1;
+}
+.order-track .ot-stepper-progress {
+  height: 100%;
+  background-color: #16a34a;
+  transition: width 0.6s ease;
+}
+.order-track .ot-step {
+  position: relative;
+  z-index: 2;
+  width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.order-track .ot-step-dot {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--card);
+  border: 2px solid var(--border);
+  color: var(--muted-foreground);
+  transition: all 0.3s ease;
+}
+.order-track .ot-step-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+}
+.order-track .ot-step.is-current .ot-step-dot {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(62, 79, 59, 0.2);
+}
+.order-track .ot-step.is-done .ot-step-dot {
+  background-color: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+.order-track .ot-step.is-done .ot-step-label,
+.order-track .ot-step.is-current .ot-step-label {
+  color: var(--foreground);
+}
+.order-track .ot-step.is-current .ot-step-label {
+  font-weight: 700;
+}
+.order-track .ot-status-note {
+  margin-top: 24px;
+  padding: 14px 18px;
+  border-radius: 4px;
+  background-color: var(--muted);
+  border-left: 4px solid var(--status-color);
+}
+.order-track .ot-status-note p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+/* ---- Single order: courier & recipient ---- */
+.order-track .ot-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background-color: rgba(0, 0, 0, 0.01);
+}
+.order-track .ot-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.order-track .ot-detail-primary {
+  margin: 2px 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.order-track .ot-detail-secondary {
+  margin: 2px 0;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+.order-track .ot-detail-note {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+  white-space: pre-wrap;
+}
+.order-track .ot-waybill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+.order-track .ot-waybill strong {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.order-track .ot-courier-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  background-color: var(--ink);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.order-track .ot-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.order-track .ot-total strong {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.order-track .ot-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  background-color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+
+/* ---- Order history: tabs ---- */
+.order-track .ot-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 2px solid var(--border);
+}
+.order-track .ot-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border: none;
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.order-track .ot-tab.is-active {
+  font-weight: 700;
+  color: var(--primary);
+}
+.order-track .ot-tab.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary);
+}
+.order-track .ot-tab-count {
+  padding: 2px 6px;
+  border-radius: 100px;
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.order-track .ot-tab.is-active .ot-tab-count {
+  background-color: var(--primary);
+  color: var(--paper);
+}
+
+/* ---- Order history: cards ---- */
+.order-track .ot-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.order-track .ot-order-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.order-track .ot-order-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+.order-track .ot-order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--muted);
+  font-size: 0.85rem;
+}
+.order-track .ot-store {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.order-track .ot-store svg {
+  color: var(--primary);
+}
+.order-track .ot-store code {
+  font-family: monospace;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.order-track .ot-order-body {
+  padding: 18px 20px;
+}
+.order-track .ot-order-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background-color: rgba(0, 0, 0, 0.01);
+  font-size: 0.85rem;
+}
+.order-track .ot-order-total span {
+  color: var(--muted-foreground);
+}
+.order-track .ot-order-total strong {
+  font-size: 1.05rem;
+  color: var(--primary);
+}
+.order-track .ot-order-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.order-track .ot-order-actions .ot-icon-button {
+  padding: 6px;
+}

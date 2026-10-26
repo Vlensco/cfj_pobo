@@ -36,3 +36,38 @@ describe("formatProductStory & parseStructuredDescription", () => {
     expect(parsed.notes[0]).toContain("NOTE: The use of normal iron is not recommended");
   });
 });
+
+import { parseDescriptionSections } from "./textUtils";
+
+describe("parseDescriptionSections", () => {
+  const html = `<ul><li>
+    <h3><strong><u>☑️ CONDITION :</u></strong></h3>
+    <ul><li><em>BNIB (Brand New In Bag)</em></li><li><em>Replica Version</em></li></ul>
+    <h3>☑️ <strong><u>NOTES :</u></strong><em>.</em></h3>
+    <ul><li><em>You can add custom name set jersey.</em><span> </span>Refer to<span> </span><a href="https://example.com/nameset" title="nameset">this link</a></li>
+    <li>Unsafe <a href="javascript:alert(1)">link</a></li></ul>
+    <h3>☑️ <strong><u>CARE :</u></strong></h3>
+    <div><ul><li><span>Machine wash cold</span></li><li>Do not iron print</li></ul></div>
+  </li></ul>`;
+
+  it("splits a headed description into titled bullet sections", () => {
+    const sections = parseDescriptionSections(html);
+    expect(sections.map(section => section.title)).toEqual(["Condition", "Notes", "Care"]);
+    expect(sections[0].items).toEqual([[{ text: "BNIB (Brand New In Bag)" }], [{ text: "Replica Version" }]]);
+    expect(sections[2].items).toHaveLength(2);
+  });
+
+  it("keeps web links clickable and neutralises anything else", () => {
+    const [, notes] = parseDescriptionSections(html);
+    expect(notes.items[0]).toEqual([
+      { text: "You can add custom name set jersey. Refer to " },
+      { text: "this link", href: "https://example.com/nameset" },
+    ]);
+    expect(notes.items[1]).toEqual([{ text: "Unsafe " }, { text: "link" }]);
+  });
+
+  it("ignores descriptions without headings", () => {
+    expect(parseDescriptionSections("Quantity : 1 set Material : Velvet")).toEqual([]);
+    expect(parseDescriptionSections(null)).toEqual([]);
+  });
+});

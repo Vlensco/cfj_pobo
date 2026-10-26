@@ -1,3 +1,4 @@
+import { useT } from "@/i18n";
 import { FadeIn, PageEntrance, StaggerContainer, StaggerItem } from "@/components/MotionReveal";
 import { ProductCard } from "@/components/ProductCard";
 import { collections, dbProductToStoreProduct, productCatalog } from "@/data/catalog";
@@ -13,10 +14,22 @@ const HalfwayLine = () => (
 );
 
 export default function Home() {
+  const t = useT();
   const catalogQuery = trpc.adminProducts.list.useQuery({ pageSize: 6 });
   const featuredProducts = useMemo(() => {
     if (catalogQuery.data?.products?.length) {
-      return catalogQuery.data.products.slice(0, 3).map(dbProductToStoreProduct);
+      const items = catalogQuery.data.products.map(dbProductToStoreProduct);
+      const seen = new Set<string>();
+      const diverse: typeof items = [];
+      for (const item of items) {
+        const coreName = item.name.replace(/\(.*?\)/g, "").trim().toLowerCase();
+        if (!seen.has(coreName) && item.collection !== "Patches & Print") {
+          seen.add(coreName);
+          diverse.push(item);
+          if (diverse.length >= 3) break;
+        }
+      }
+      return diverse.length ? diverse : items.slice(0, 3);
     }
     return productCatalog.slice(0, 3);
   }, [catalogQuery.data?.products]);
@@ -26,31 +39,31 @@ export default function Home() {
         <section className="hero">
           <img
             src="/manus-storage/terrace-hero-campaign_f4438644.jpg"
-            alt="CFJ campaign featuring original football-culture apparel by cfjersey"
+            alt={t("CFJ campaign featuring original football-culture apparel by cfjersey")}
           />
           <div className="hero-overlay">
             <FadeIn delay={0.1} y={15}>
-              <p className="eyebrow light">Drop 01 / The 90s Study</p>
+              <p className="eyebrow light">{t("CFJ Archive / Football Culture & Classic Kits")}</p>
             </FadeIn>
             <FadeIn delay={0.2} y={20}>
               <h1>
-                For the feeling
+                {t("For the feeling")}
                 <br />
-                before it starts.
+                {t("before it starts.")}
               </h1>
             </FadeIn>
             <FadeIn delay={0.35} y={20}>
               <div className="hero-actions">
                 <Link href="/shop" className="primary-button light-button">
-                  Shop the release <ArrowUpRight size={16} />
+                  {t("Shop the archive")} <ArrowUpRight size={16} />
                 </Link>
                 <a href="#campaign" className="text-link light-link">
-                  Read the campaign <ArrowDownRight size={16} />
+                  {t("Read the journal")} <ArrowDownRight size={16} />
                 </a>
               </div>
             </FadeIn>
           </div>
-          <p className="hero-caption">A study of passageways, anticipation, and the quiet uniform of belonging.</p>
+          <p className="hero-caption">{t("Over 1,700 authentic classic football shirts, patches, and personalized namesets.")}</p>
         </section>
 
         <HalfwayLine />
@@ -58,16 +71,15 @@ export default function Home() {
         <FadeIn delay={0.1}>
           <section className="intro-section">
             <div>
-              <p className="eyebrow">CFJ · cfjersey / Original by design</p>
+              <p className="eyebrow">{t("CFJ · cfjersey / Curated Calcio & Retro Football")}</p>
               <h2>
-                Football culture,
+                {t("Football culture,")}
                 <br />
-                <em>recomposed.</em>
+                <em>{t("recomposed.")}</em>
               </h2>
             </div>
             <p>
-              We take the shared rituals and soft geometry around the game as a starting point, then make something new. No
-              borrowed badges. No replicas. Just considered garments for people who know the feeling.
+              {t("From 90s Serie A and Premier League glory to official sleeve patches and custom nameset printing. Timeless garments preserved for true football purists.")}
             </p>
           </section>
         </FadeIn>
@@ -76,43 +88,40 @@ export default function Home() {
           <FadeIn>
             <div className="section-head">
               <div>
-                <p className="eyebrow">Featured drop</p>
-                <h2>The 90s Study</h2>
+                <p className="eyebrow">{t("Curated Classics")}</p>
+                <h2>{t("Iconic Matchday Apparel")}</h2>
               </div>
               <Link href="/shop" className="section-link">
-                Shop all pieces <ArrowUpRight size={16} />
+                {t("Shop all 1,760 pieces")} <ArrowUpRight size={16} />
               </Link>
             </div>
           </FadeIn>
-          <StaggerContainer className="catalog-grid" staggerDelay={0.15}>
+          <div className="catalog-grid">
             {featuredProducts.map((product, index) => (
-              <StaggerItem key={product.id}>
-                <ProductCard product={product} priority={index === 0} />
-              </StaggerItem>
+              <ProductCard key={product.id} product={product} priority={index === 0} />
             ))}
-          </StaggerContainer>
+          </div>
         </section>
 
         <FadeIn>
           <section id="campaign" className="campaign-section">
             <div className="campaign-copy">
-              <p className="eyebrow">Field notes / 001</p>
+              <p className="eyebrow">{t("Field notes / 001")}</p>
               <h2>
-                The long way
+                {t("The long way")}
                 <br />
-                to the turnstile.
+                {t("to the turnstile.")}
               </h2>
               <p>
-                It begins with the route in, the familiar concrete, the hum of a gathering crowd. The first CFJ story
-                follows what happens before the game becomes a game.
+                {t("It begins with the route in, the familiar concrete, the hum of a gathering crowd. The first CFJ story follows what happens before the game becomes a game.")}
               </p>
               <a href="#journal" className="section-link">
-                Enter the journal <ArrowUpRight size={16} />
+                {t("Enter the journal")} <ArrowUpRight size={16} />
               </a>
             </div>
             <div className="campaign-stat">
-              <span>18:42</span>
-              <p>Last light on the concourse, before the doors open.</p>
+              <span>1,760+</span>
+              <p>{t("Archival shirts, badges, and original classic collections.")}</p>
               <Sparkle size={18} strokeWidth={1.25} />
             </div>
           </section>
@@ -122,8 +131,8 @@ export default function Home() {
           <FadeIn>
             <div className="section-head">
               <div>
-                <p className="eyebrow">By era, not by badge</p>
-                <h2>Find your study</h2>
+                <p className="eyebrow">{t("By league & era")}</p>
+                <h2>{t("Find your heritage")}</h2>
               </div>
             </div>
           </FadeIn>
@@ -131,10 +140,10 @@ export default function Home() {
             {collections.map(collection => (
               <StaggerItem key={collection.name}>
                 <Link href={collection.href || "/shop"} className="collection-card">
-                  <img src={collection.image} alt={collection.name} />
+                  <img src={collection.image} alt={t(collection.name)} />
                   <div>
-                    <p>{collection.description}</p>
-                    <h3>{collection.name}</h3>
+                    <p>{t(collection.description)}</p>
+                    <h3>{t(collection.name)}</h3>
                   </div>
                   <ArrowUpRight size={19} />
                 </Link>
@@ -145,22 +154,22 @@ export default function Home() {
 
         <FadeIn>
           <section id="journal" className="newsletter-section">
-            <p className="eyebrow">Notes from CFJ</p>
+            <p className="eyebrow">{t("Notes from CFJ")}</p>
             <h2>
-              New studies, field notes,
+              {t("New studies, field notes,")}
               <br />
-              and early access.
+              {t("and early access.")}
             </h2>
             <form onSubmit={event => event.preventDefault()}>
               <label className="sr-only" htmlFor="email">
-                Email address
+                {t("Email address")}
               </label>
-              <input id="email" type="email" placeholder="Your email address" required />
+              <input id="email" type="email" placeholder={t("Your email address")} required />
               <button type="submit">
-                Subscribe <ArrowUpRight size={16} />
+                {t("Subscribe")} <ArrowUpRight size={16} />
               </button>
             </form>
-            <p>By subscribing, you agree to receive considered correspondence from CFJ (cfjersey).</p>
+            <p>{t("By subscribing, you agree to receive considered correspondence from CFJ (cfjersey).")}</p>
           </section>
         </FadeIn>
       </main>

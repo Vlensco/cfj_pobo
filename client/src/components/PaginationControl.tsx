@@ -1,3 +1,4 @@
+import { useT } from "@/i18n";
 import React from "react";
 
 interface PaginationControlProps {
@@ -47,24 +48,25 @@ export function PaginationControl({
   onPageChange,
   className = "pagination-controls",
 }: PaginationControlProps) {
+  const t = useT();
   if (totalPages <= 1) return null;
 
   const range = getPaginationRange(currentPage, totalPages);
 
   return (
-    <div className={className} aria-label="Pagination">
+    <div className={className} aria-label={t("Pagination")}>
       <button
         type="button"
         disabled={currentPage <= 1}
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
       >
-        Previous
+        {t("Previous")}
       </button>
 
       {range.map((item, idx) => {
         if (typeof item === "string") {
           return (
-            <span key={`dots-${idx}`} className="pagination-ellipsis" aria-hidden="true" style={{ padding: "0 6px", color: "#888a84", fontSize: "12px" }}>
+            <span key={`dots-${idx}`} className="pagination-ellipsis" aria-hidden="true">
               ...
             </span>
           );
@@ -75,7 +77,7 @@ export function PaginationControl({
             type="button"
             className={currentPage === item ? "active" : ""}
             onClick={() => onPageChange(item)}
-            aria-label={`Page ${item}`}
+            aria-label={t("Page {number}", { number: item })}
             aria-current={currentPage === item ? "page" : undefined}
           >
             {item}
@@ -88,7 +90,7 @@ export function PaginationControl({
         disabled={currentPage >= totalPages}
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
       >
-        Next
+        {t("Next")}
       </button>
     </div>
   );

@@ -15,6 +15,7 @@ vi.mock("@/lib/trpc", () => ({
       getDetails: { useQuery: () => ({ data: undefined }) },
       list: { useQuery: () => ({ data: { products: [] } }) },
     },
+    catalog: { addOns: { useQuery: () => ({ data: undefined }) } },
   },
 }));
 

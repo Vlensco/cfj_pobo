@@ -1,3 +1,4 @@
+import { useT } from "@/i18n";
 import { FadeIn, PageEntrance, StaggerContainer, StaggerItem } from "@/components/MotionReveal";
 import { ArrowUpRight, BookOpen, Calendar, Clock, Filter, Sparkles, Tag, X } from "lucide-react";
 import { useState } from "react";
@@ -92,19 +93,18 @@ const ARTICLES: Article[] = [
 const CATEGORIES = ["All", "Field Notes", "Fabric Studies", "Culture", "Lookbooks"] as const;
 
 export default function Journal() {
+  const t = useT();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [activeArticle, setActiveArticle] = useState<Article | null>(null);
   const [email, setEmail] = useState("");
 
   const filteredArticles =
-    selectedCategory === "All"
-      ? ARTICLES
-      : ARTICLES.filter(art => art.category === selectedCategory);
+    selectedCategory === "All" ? ARTICLES : ARTICLES.filter(art => art.category === selectedCategory);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    toast.success("Thank you for subscribing to Notes from the Terrace.");
+    toast.success(t("Thank you for subscribing to Notes from the Terrace."));
     setEmail("");
   };
 
@@ -114,31 +114,30 @@ export default function Journal() {
         {/* Header */}
         <section className="journal-header">
           <FadeIn delay={0.05} y={15}>
-            <p className="eyebrow">The Editorial Archive</p>
+            <p className="eyebrow">{t("The Editorial Archive")}</p>
           </FadeIn>
           <FadeIn delay={0.15} y={20}>
             <h1>
-              Notes from
+              {t("Notes from")}
               <br />
-              the Terrace.
+              {t("the Terrace.")}
             </h1>
           </FadeIn>
           <FadeIn delay={0.25} y={20}>
             <p className="journal-lead">
-              Field notes, fabric studies, and cultural dispatches from the intersection of football memory and garment
-              design.
+              {t("Field notes, fabric studies, and cultural dispatches from the intersection of football memory and garment design.")}
             </p>
           </FadeIn>
 
           {/* Category Filter */}
-          <div className="journal-categories" aria-label="Filter journal by topic">
+          <div className="journal-categories" aria-label={t("Filter journal by topic")}>
             {CATEGORIES.map(cat => (
               <button
                 key={cat}
                 className={selectedCategory === cat ? "active" : ""}
                 onClick={() => setSelectedCategory(cat)}
               >
-                {cat}
+                {t(cat)}
               </button>
             ))}
           </div>
@@ -150,22 +149,22 @@ export default function Journal() {
             <FadeIn>
               <article className="featured-article-card" onClick={() => setActiveArticle(ARTICLES[0])}>
                 <div className="featured-article-media">
-                  <img src={ARTICLES[0].image} alt={ARTICLES[0].title} />
-                  <span className="featured-badge">Featured Dispatch</span>
+                  <img src={ARTICLES[0].image} alt={t(ARTICLES[0].title)} />
+                  <span className="featured-badge">{t("Featured Dispatch")}</span>
                 </div>
                 <div className="featured-article-body">
                   <div className="article-meta">
-                    <span className="article-cat">{ARTICLES[0].category}</span>
+                    <span className="article-cat">{t(ARTICLES[0].category)}</span>
                     <span className="meta-dot">·</span>
-                    <span>{ARTICLES[0].readTime}</span>
+                    <span>{t(ARTICLES[0].readTime)}</span>
                     <span className="meta-dot">·</span>
-                    <span>{ARTICLES[0].date}</span>
+                    <span>{t(ARTICLES[0].date)}</span>
                   </div>
-                  <h2>{ARTICLES[0].title}</h2>
-                  <p className="article-subtitle">{ARTICLES[0].subtitle}</p>
-                  <p className="article-excerpt">{ARTICLES[0].excerpt}</p>
+                  <h2>{t(ARTICLES[0].title)}</h2>
+                  <p className="article-subtitle">{t(ARTICLES[0].subtitle)}</p>
+                  <p className="article-excerpt">{t(ARTICLES[0].excerpt)}</p>
                   <button className="read-button">
-                    Read article <BookOpen size={15} />
+                    {t("Read article")} <BookOpen size={15} />
                   </button>
                 </div>
               </article>
@@ -180,19 +179,19 @@ export default function Journal() {
               <StaggerItem key={article.id}>
                 <article className="journal-card" onClick={() => setActiveArticle(article)}>
                   <div className="journal-card-img">
-                    <img src={article.image} alt={article.title} />
-                    <span className="card-category">{article.category}</span>
+                    <img src={article.image} alt={t(article.title)} />
+                    <span className="card-category">{t(article.category)}</span>
                   </div>
                   <div className="journal-card-info">
                     <div className="article-meta">
-                      <span>{article.date}</span>
+                      <span>{t(article.date)}</span>
                       <span className="meta-dot">·</span>
-                      <span>{article.readTime}</span>
+                      <span>{t(article.readTime)}</span>
                     </div>
-                    <h3>{article.title}</h3>
-                    <p>{article.subtitle}</p>
+                    <h3>{t(article.title)}</h3>
+                    <p>{t(article.subtitle)}</p>
                     <span className="card-read-link">
-                      Read study <ArrowUpRight size={14} />
+                      {t("Read study")} <ArrowUpRight size={14} />
                     </span>
                   </div>
                 </article>
@@ -204,21 +203,21 @@ export default function Journal() {
         {/* Newsletter Subscription */}
         <section className="journal-newsletter">
           <FadeIn>
-            <p className="eyebrow">Direct Correspondence</p>
-            <h2>Receive early access & printed field notes.</h2>
+            <p className="eyebrow">{t("Direct Correspondence")}</p>
+            <h2>{t("Receive early access & printed field notes.")}</h2>
             <p>
-              Subscribers receive private drop links, editorial print previews, and invitations to Terrace archive pop-ups.
+              {t("Subscribers receive private drop links, editorial print previews, and invitations to Terrace archive pop-ups.")}
             </p>
             <form className="journal-subscribe-form" onSubmit={handleSubscribe}>
               <input
                 type="email"
-                placeholder="Your email address"
+                placeholder={t("Your email address")}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
               />
               <button type="submit">
-                Subscribe <ArrowUpRight size={16} />
+                {t("Subscribe")} <ArrowUpRight size={16} />
               </button>
             </form>
           </FadeIn>
@@ -231,37 +230,37 @@ export default function Journal() {
               <button
                 className="close-modal-button"
                 onClick={() => setActiveArticle(null)}
-                aria-label="Close article reader"
+                aria-label={t("Close article reader")}
               >
                 <X size={20} />
               </button>
 
               <div className="article-modal-head">
                 <div className="article-meta">
-                  <span className="article-cat">{activeArticle.category}</span>
+                  <span className="article-cat">{t(activeArticle.category)}</span>
                   <span className="meta-dot">·</span>
-                  <span>{activeArticle.readTime}</span>
+                  <span>{t(activeArticle.readTime)}</span>
                   <span className="meta-dot">·</span>
-                  <span>{activeArticle.date}</span>
+                  <span>{t(activeArticle.date)}</span>
                 </div>
-                <h1>{activeArticle.title}</h1>
-                <p className="modal-subtitle">{activeArticle.subtitle}</p>
+                <h1>{t(activeArticle.title)}</h1>
+                <p className="modal-subtitle">{t(activeArticle.subtitle)}</p>
               </div>
 
               <div className="modal-hero-image">
-                <img src={activeArticle.image} alt={activeArticle.title} />
+                <img src={activeArticle.image} alt={t(activeArticle.title)} />
               </div>
 
               <div className="modal-prose">
                 {activeArticle.content.map((paragraph, idx) => (
-                  <p key={idx}>{paragraph}</p>
+                  <p key={idx}>{t(paragraph)}</p>
                 ))}
               </div>
 
               <div className="modal-foot">
-                <p className="eyebrow">Terrace Journal / {activeArticle.category}</p>
+                <p className="eyebrow">{t("Terrace Journal /")} {t(activeArticle.category)}</p>
                 <Link href="/shop" className="primary-button" onClick={() => setActiveArticle(null)}>
-                  Shop Drop 01 <ArrowUpRight size={16} />
+                  {t("Shop Drop 01")} <ArrowUpRight size={16} />
                 </Link>
               </div>
             </div>

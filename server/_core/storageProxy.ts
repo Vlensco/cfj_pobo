@@ -8,6 +8,8 @@ function getFallbackSvg(filename: string): string {
     .replace(/^terrace-/, "")
     .replace(/_[a-f0-9]+\.jpg$/, "")
     .replace(/[-_]/g, " ")
+    .replace(/[^a-zA-Z0-9 .]/g, "")
+    .slice(0, 60)
     .toUpperCase();
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" width="100%" height="100%">
@@ -43,6 +45,25 @@ function getFallbackSvg(filename: string): string {
 </svg>`;
 }
 
+/** Directories that may serve `/manus-storage/*` files, most specific first. */
+const ASSET_ROOTS = [
+  ["terrace-assets"],
+  ["client", "public", "manus-storage"],
+  ["dist", "public", "manus-storage"],
+  ["client", "public"],
+  ["dist", "public"],
+].map(segments => path.resolve(process.cwd(), ...segments));
+
+/** Resolves a storage key to an existing file, refusing anything outside the asset directories. */
+function findLocalAsset(key: string): string | null {
+  for (const root of ASSET_ROOTS) {
+    const candidate = path.resolve(root, key);
+    const isInsideRoot = candidate.startsWith(root + path.sep);
+    if (isInsideRoot && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
@@ -51,20 +72,11 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    // 1. Check if the file exists locally in terrace-assets, client/public/manus-storage or public/manus-storage
-    const localPaths = [
-      path.resolve(process.cwd(), "terrace-assets", key),
-      path.resolve(process.cwd(), "client", "public", "manus-storage", key),
-      path.resolve(process.cwd(), "dist", "public", "manus-storage", key),
-      path.resolve(process.cwd(), "client", "public", key),
-      path.resolve(process.cwd(), "dist", "public", key),
-    ];
-
-    for (const localPath of localPaths) {
-      if (fs.existsSync(localPath)) {
-        res.setHeader("Cache-Control", "public, max-age=86400");
-        return res.sendFile(localPath);
-      }
+    // 1. Serve the file from a local asset directory when it exists
+    const localAsset = findLocalAsset(key);
+    if (localAsset) {
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.sendFile(localAsset);
     }
 
     // 2. If Forge API configured, try proxying

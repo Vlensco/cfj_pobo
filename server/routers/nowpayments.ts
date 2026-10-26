@@ -1,54 +1,64 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
-import { recordOnlinePaymentOrder } from "../orderRequests";
-import { createCryptoInvoice } from "../nowpayments";
+import { getAppOrigin } from "../_core/security";
+import { protectedProcedure, router } from "../_core/trpc";
+import { createCryptoInvoice } from "../modules/payments/nowpayments";
+import { describeOrderLine, recordOnlinePaymentOrder } from "../modules/orders/orderRequests";
+import { cartItemsSchema, priceCart } from "./cart";
+
+/** NOWPayments caps `order_description`; keep the summary well inside it. */
+const MAX_DESCRIPTION_LENGTH = 480;
 
 export const nowpaymentsRouter = router({
-  createInvoice: publicProcedure
+  createInvoice: protectedProcedure
     .input(
       z.object({
-        amount: z.number().positive(),
-        orderDescription: z.string().optional(),
+        items: cartItemsSchema,
         customerEmail: z.string().email().optional(),
-        origin: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const host = ctx.req.headers.origin || input.origin || `http://localhost:${process.env.PORT || 3000}`;
+      const { lines, subtotal } = priceCart(input.items);
+      const orderDescription = lines
+        .map(line => `${line.quantity}x ${describeOrderLine(line)}`)
+        .join(", ")
+        .slice(0, MAX_DESCRIPTION_LENGTH);
+      const origin = getAppOrigin(ctx.req);
       const orderId = `TR-CRYPTO-${Date.now().toString(36).toUpperCase()}`;
-      const successUrl = `${host}/order-success?provider=nowpayments&order_id=${orderId}`;
-      const cancelUrl = `${host}/shop?checkout_cancelled=true`;
-      const ipnCallbackUrl = `${host}/api/nowpayments/webhook`;
+      const customerEmail = input.customerEmail || ctx.user?.email || undefined;
 
       const invoice = await createCryptoInvoice({
-        amount: Math.round(input.amount),
+        amount: subtotal,
         orderId,
-        orderDescription: input.orderDescription || "TERRACE Football Culture Apparel",
-        customerEmail: input.customerEmail || ctx.user?.email || undefined,
-        successUrl,
-        cancelUrl,
-        ipnCallbackUrl,
+        orderDescription,
+        customerEmail,
+        successUrl: `${origin}/order-success?provider=nowpayments&order_id=${orderId}`,
+        cancelUrl: `${origin}/shop?checkout_cancelled=true`,
+        ipnCallbackUrl: `${origin}/api/nowpayments/webhook`,
       });
 
+      // Mirror into order_requests so it shows up in the admin dashboard and live tracking right away.
       try {
         await recordOnlinePaymentOrder({
           reference: orderId,
           customerName: ctx.user?.name ?? undefined,
-          email: input.customerEmail || ctx.user?.email || undefined,
+          email: customerEmail,
           notes: `NOWPayments Invoice: ${invoice.id}`,
-          items: [{ name: input.orderDescription || "Terrace Football Culture Apparel", quantity: 1, price: Math.round(input.amount) }],
-          subtotal: Math.round(input.amount),
+          items: lines.map(line => ({
+            productId: line.productId,
+            name: describeOrderLine(line),
+            quantity: line.quantity,
+            price: line.unitAmount,
+            color: line.color,
+            size: line.size,
+          })),
+          subtotal,
           currency: "IDR",
           status: "new",
         });
-      } catch (e) {
-        console.warn("[NOWPayments] Failed to pre-record order_request:", e);
+      } catch (error) {
+        console.warn("[NOWPayments] Failed to pre-record order_request:", error);
       }
 
-      return {
-        invoiceId: invoice.id,
-        orderId: invoice.order_id,
-        invoiceUrl: invoice.invoice_url,
-      };
+      return { invoiceId: invoice.id, orderId: invoice.order_id, invoiceUrl: invoice.invoice_url };
     }),
 });

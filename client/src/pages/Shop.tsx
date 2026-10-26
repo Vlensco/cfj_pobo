@@ -1,3 +1,4 @@
+import { useT } from "@/i18n";
 import { FadeIn, PageEntrance, StaggerContainer, StaggerItem } from "@/components/MotionReveal";
 import { PaginationControl } from "@/components/PaginationControl";
 import { ProductCard } from "@/components/ProductCard";
@@ -21,6 +22,7 @@ function getCurrentPreferences() {
 }
 
 export default function Shop() {
+  const t = useT();
   const [preferences, setPreferences] = useState<CatalogPreferences>(getCurrentPreferences);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
@@ -74,33 +76,33 @@ export default function Shop() {
         <FadeIn delay={0.05} y={15}>
           <section className="shop-heading">
             <div className="shop-heading-main">
-              <p className="eyebrow">01 / The first release</p>
+              <p className="eyebrow">{t("CFJ Archive / 1,760+ Matchday Classics")}</p>
               <h1>
-                For the hours
+                {t("Classic Football")}
                 <br />
-                around the game.
+                {t("Kit Collection.")}
               </h1>
             </div>
             <div className="shop-heading-desc">
-              <p>Original pieces in four quiet movements. Designed in small runs, worn long after the final whistle.</p>
+              <p>{t("Iconic Calcio, Premier League, La Liga, and World Cup shirts. Add custom nameset printing and official sleeve badges directly to your bag.")}</p>
             </div>
           </section>
         </FadeIn>
 
         <FadeIn delay={0.3} y={20}>
-          <section className="catalog-filter-panel" aria-label="Catalog filters">
+          <section className="catalog-filter-panel" aria-label={t("Catalog filters")}>
             <div className="filter-panel-head">
               <div>
                 <p className="eyebrow">
-                  <SlidersHorizontal size={13} /> Refine the study
+                  <SlidersHorizontal size={13} /> {t("Refine the collection")}
                 </p>
                 <p className="filter-summary" aria-live="polite">
-                  {products.length} {products.length === 1 ? "piece" : "pieces"} in view
+                  {t(products.length === 1 ? "{count} piece in view" : "{count} pieces in view", { count: products.length })}
                 </p>
               </div>
               {filtersActive && (
                 <button className="reset-filters" onClick={resetFilters}>
-                  <RotateCcw size={13} /> Reset
+                  <RotateCcw size={13} /> {t("Reset")}
                 </button>
               )}
             </div>
@@ -108,33 +110,33 @@ export default function Shop() {
             <div className="catalog-search">
               <Search size={17} aria-hidden="true" />
               <label className="sr-only" htmlFor="catalog-search">
-                Search the collection
+                {t("Search the collection")}
               </label>
               <input
                 id="catalog-search"
                 value={preferences.query}
                 onChange={event => updatePreferences({ query: event.target.value })}
-                placeholder="Search pieces, fabric, colour…"
+                placeholder={t("Search club, player, league, era (e.g. Juventus, Zidane, Milan, Arsenal, 1999)…")}
                 autoComplete="off"
               />
             </div>
 
             <div className="catalog-controls">
-              <div className="filter-list" aria-label="Filter by category">
+              <div className="filter-list" aria-label={t("Filter by category")}>
                 {CATEGORY_OPTIONS.map(category => (
                   <button
                     key={category.value}
                     className={preferences.category === category.value ? "active" : ""}
                     onClick={() => updatePreferences({ category: category.value })}
                   >
-                    {category.label}
+                    {t(category.label)}
                   </button>
                 ))}
               </div>
 
               <div className="catalog-selects">
                 <label className="sort-select">
-                  Price{" "}
+                  {t("Price")}{" "}
                   <select
                     value={preferences.price}
                     onChange={event =>
@@ -143,14 +145,14 @@ export default function Shop() {
                   >
                     {PRICE_OPTIONS.map(option => (
                       <option value={option.value} key={option.value}>
-                        {option.label}
+                        {t(option.label)}
                       </option>
                     ))}
                   </select>
                 </label>
 
                 <label className="sort-select">
-                  Sort{" "}
+                  {t("Sort")}{" "}
                   <select
                     value={preferences.sort}
                     onChange={event =>
@@ -159,7 +161,7 @@ export default function Shop() {
                   >
                     {SORT_OPTIONS.map(option => (
                       <option value={option.value} key={option.value}>
-                        {option.label}
+                        {t(option.label)}
                       </option>
                     ))}
                   </select>
@@ -171,13 +173,11 @@ export default function Shop() {
 
         {paginatedProducts.length ? (
           <>
-            <StaggerContainer className="catalog-grid" staggerDelay={0.08}>
+            <div className="catalog-grid">
               {paginatedProducts.map((product, index) => (
-                <StaggerItem key={product.id}>
-                  <ProductCard product={product} priority={index < 2} />
-                </StaggerItem>
+                <ProductCard key={`${product.id}-${page}-${index}`} product={product} priority={index < 4} />
               ))}
-            </StaggerContainer>
+            </div>
 
             <div className="pagination-section">
               <PaginationControl
@@ -191,10 +191,14 @@ export default function Shop() {
 
               <div className="pagination-summary">
                 <span>
-                  Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, products.length)} of {products.length} pieces
+                  {t("Showing {from}–{to} of {total} pieces", {
+                    from: (page - 1) * pageSize + 1,
+                    to: Math.min(page * pageSize, products.length),
+                    total: products.length,
+                  })}
                 </span>
                 <div className="page-size-selector">
-                  <span>Per page:</span>
+                  <span>{t("Per page:")}</span>
                   {[6, 12, 18].map(size => (
                     <button
                       key={size}
@@ -214,11 +218,11 @@ export default function Shop() {
         ) : (
           <FadeIn>
             <div className="catalog-empty">
-              <p className="eyebrow">No pieces in this view</p>
-              <h2>Try a different study.</h2>
-              <p>Adjust the search, category, or price range to return to the collection.</p>
+              <p className="eyebrow">{t("No pieces in this view")}</p>
+              <h2>{t("Try a different study.")}</h2>
+              <p>{t("Adjust the search, category, or price range to return to the collection.")}</p>
               <button className="primary-button" onClick={resetFilters}>
-                Reset filters
+                {t("Reset filters")}
               </button>
             </div>
           </FadeIn>

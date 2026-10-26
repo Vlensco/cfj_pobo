@@ -242,6 +242,8 @@ export const orderRequests = pgTable("order_requests", {
   customerName: varchar("customer_name", { length: 120 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 40 }).notNull(),
+  /** Account that placed the order; only that signed-in account sees it in "My Orders". */
+  userOpenId: varchar("user_open_id", { length: 64 }),
   notes: text("notes"),
   items: text("items").notNull(),
   subtotal: integer("subtotal").notNull(),
@@ -257,10 +259,27 @@ export const orderRequests = pgTable("order_requests", {
 }, table => [
   index("order_requests_status_idx").on(table.status),
   index("order_requests_created_at_idx").on(table.createdAt),
+  index("order_requests_user_open_id_idx").on(table.userOpenId),
 ]);
 
 export type OrderRequest = typeof orderRequests.$inferSelect;
 export type InsertOrderRequest = typeof orderRequests.$inferInsert;
+
+/**
+ * Files customers attach to a customisation (e.g. the font reference for a custom nameset).
+ * Stored in the database so uploads survive redeploys on both the VPS and serverless hosts.
+ */
+export const customizationUploads = pgTable("customization_uploads", {
+  id: varchar("id", { length: 32 }).primaryKey(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  /** Base64-encoded file contents (max 5 MB before encoding). */
+  data: text("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type CustomizationUpload = typeof customizationUploads.$inferSelect;
 
 /**
  * Follow-up reminder settings table

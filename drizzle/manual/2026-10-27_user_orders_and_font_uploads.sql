@@ -2,6 +2,10 @@
 -- customer font references for custom namesets. Additive and safe to re-run.
 --
 -- Apply with:  psql "$DATABASE_URL" -f drizzle/manual/2026-10-27_user_orders_and_font_uploads.sql
+-- Run it as the app's own role (the user in DATABASE_URL). If a superuser runs it,
+-- hand the new table to the app role afterwards, e.g. on the VPS:
+--   ALTER TABLE customization_uploads OWNER TO cfjersey;
+-- otherwise every font upload fails with "The file could not be saved."
 BEGIN;
 
 ALTER TABLE order_requests ADD COLUMN IF NOT EXISTS user_open_id varchar(64);

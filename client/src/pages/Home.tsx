@@ -2,6 +2,7 @@ import { useT } from "@/i18n";
 import { FadeIn, PageEntrance, StaggerContainer, StaggerItem } from "@/components/MotionReveal";
 import { ProductCard } from "@/components/ProductCard";
 import { collections, dbProductToStoreProduct, productCatalog } from "@/data/catalog";
+import { isAddOn } from "@/lib/catalogFilters";
 import { trpc } from "@/lib/trpc";
 import { ArrowDownRight, ArrowUpRight, Sparkle } from "lucide-react";
 import { useMemo } from "react";
@@ -15,23 +16,22 @@ const HalfwayLine = () => (
 
 export default function Home() {
   const t = useT();
-  const catalogQuery = trpc.adminProducts.list.useQuery({ pageSize: 6 });
+  // The newest products are often patches and namesets, so fetch enough to find three shirts.
+  const catalogQuery = trpc.adminProducts.list.useQuery({ pageSize: 60 });
   const featuredProducts = useMemo(() => {
-    if (catalogQuery.data?.products?.length) {
-      const items = catalogQuery.data.products.map(dbProductToStoreProduct);
-      const seen = new Set<string>();
-      const diverse: typeof items = [];
-      for (const item of items) {
-        const coreName = item.name.replace(/\(.*?\)/g, "").trim().toLowerCase();
-        if (!seen.has(coreName) && item.collection !== "Patches & Print") {
-          seen.add(coreName);
-          diverse.push(item);
-          if (diverse.length >= 3) break;
-        }
+    const items = (catalogQuery.data?.products ?? []).map(dbProductToStoreProduct);
+    const seen = new Set<string>();
+    const shirts: typeof items = [];
+    for (const item of items) {
+      const coreName = item.name.replace(/\(.*?\)/g, "").trim().toLowerCase();
+      // Same add-on rule as the Shop page: patches and namesets are never featured.
+      if (!seen.has(coreName) && !isAddOn(item)) {
+        seen.add(coreName);
+        shirts.push(item);
+        if (shirts.length >= 3) break;
       }
-      return diverse.length ? diverse : items.slice(0, 3);
     }
-    return productCatalog.slice(0, 3);
+    return shirts.length ? shirts : productCatalog.slice(0, 3);
   }, [catalogQuery.data?.products]);
   return (
     <PageEntrance>

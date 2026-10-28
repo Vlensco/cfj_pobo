@@ -3,6 +3,7 @@ import { FadeIn, PageEntrance, StaggerContainer, StaggerItem } from "@/component
 import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/contexts/CartContext";
 import { dbProductToStoreProduct, getProductBySlug, productCatalog } from "@/data/catalog";
+import { isAddOn } from "@/lib/catalogFilters";
 import { ADD_TO_BAG_FEEDBACK_MS } from "@/lib/interactionTimings";
 import { useFormatPrice } from "@/lib/currency";
 import { ArrowLeft, ChevronDown, LoaderCircle, Plus, Ruler } from "lucide-react";
@@ -22,7 +23,7 @@ export default function ProductPage() {
   const [, params] = useRoute("/products/:slug");
   const slug = params?.slug || "";
   const productDetailQuery = trpc.adminProducts.getDetails.useQuery({ handle: slug }, { enabled: Boolean(slug) });
-  const allListQuery = trpc.adminProducts.list.useQuery({ pageSize: 50 });
+  const allListQuery = trpc.adminProducts.list.useQuery({ pageSize: 120 });
 
   const product = useMemo(() => {
     if (productDetailQuery.data) {
@@ -56,8 +57,12 @@ export default function ProductPage() {
     return productCatalog;
   }, [allListQuery.data?.products]);
 
+  // Shirts suggest shirts, patches suggest patches (same add-on rule as the Shop page).
   const related = useMemo(() => {
-    return allProducts.filter(item => item.id !== product?.id && item.slug !== product?.slug).slice(0, 3);
+    const wantAddOns = product ? isAddOn(product) : false;
+    return allProducts
+      .filter(item => item.id !== product?.id && item.slug !== product?.slug && isAddOn(item) === wantAddOns)
+      .slice(0, 3);
   }, [allProducts, product]);
   if (!product) {
     if (productDetailQuery.isLoading) {

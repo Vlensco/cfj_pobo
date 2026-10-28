@@ -137,6 +137,22 @@ export function writeCatalogPreferences(preferences: CatalogPreferences) {
   return search ? `?${search}` : "";
 }
 
+/**
+ * Patches, sponsors and ready-made namesets are sold as add-ons in the
+ * personaliser. Like the server (`addOnKindOf` in csvCatalog.ts) this relies on
+ * the "Patch" / "nameset" tags, because many shirts were filed under the
+ * "Patches & Print" type by mistake.
+ */
+export function isAddOn(product: Product): boolean {
+  const tags = (product.tags || "")
+    .split(",")
+    .map(tag => tag.trim().toLowerCase())
+    .filter(Boolean);
+  if (tags.length > 0) return tags.includes("patch") || tags.includes("nameset");
+  const name = product.name.toLowerCase();
+  return !/shirt|jersey|jacket|polo/.test(name) && /patch|nameset|sponsor/.test(name);
+}
+
 export function applyCatalogPreferences(products: Product[], preferences: CatalogPreferences) {
   const normalizedQuery = preferences.query.trim().toLowerCase();
   const filtered = products.filter(product => {
@@ -154,8 +170,11 @@ export function applyCatalogPreferences(products: Product[], preferences: Catalo
       .toLowerCase();
 
     const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+    // Add-ons only appear under "Patches & Print"; every other view, "All pieces" included, shows the shirts.
+    const addOn = isAddOn(product);
     const matcher = categoryMatchers[preferences.category];
-    const matchesCategory = matcher ? matcher(product, searchable) : true;
+    const matchesCategory =
+      preferences.category === "patches" ? addOn : !addOn && (matcher ? matcher(product, searchable) : true);
     const matchesPrice =
       preferences.price === "all" ||
       (preferences.price === "under-1m" && product.price < 1000000) ||

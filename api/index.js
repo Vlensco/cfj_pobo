@@ -39407,7 +39407,7 @@ var tagSet = (tags) => new Set((tags ?? "").split(",").map((tag2) => tag2.trim()
 function addOnKindOf(product) {
   const tags = tagSet(product.tags);
   if (!tags.has("patch")) return null;
-  return tags.has("nameset") ? "nameset" : "patch";
+  return tags.has("nameset") || /\bname\s?set\b/i.test(product.title) ? "nameset" : "patch";
 }
 var addOnCache = null;
 function loadAddOns() {

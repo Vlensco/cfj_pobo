@@ -1,5 +1,5 @@
 import { useT } from "@/i18n";
-import { formatPrice } from "@/lib/money";
+import { useFormatPrice } from "@/lib/currency";
 import { CheckCircle2, LoaderCircle, ShoppingBag, Store, Truck } from "lucide-react";
 import { useMemo, useState, type MouseEvent } from "react";
 import { Link } from "wouter";
@@ -30,6 +30,7 @@ const withoutOpening = (action: () => void) => (event: MouseEvent) => {
 
 function OrderCard({ order, onOpen, onReorder }: Pick<Props, "onOpen" | "onReorder"> & { order: TrackedOrder }) {
   const t = useT();
+  const formatPrice = useFormatPrice();
   const itemCount = order.items.length;
 
   return (

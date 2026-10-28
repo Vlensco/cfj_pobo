@@ -13,7 +13,8 @@ export type CatalogAddOn = {
   image: string | null;
 };
 
-const PAGE_SIZE = 30;
+// Short pages keep the list inside the page flow (no scroll box of its own that traps the mouse wheel).
+const PAGE_SIZE = 6;
 
 function useDebounced<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);

@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import "./jersey-back-preview.css";
-
-type Rgb = [red: number, green: number, blue: number];
+import { luminance, readShirtPalette, type Rgb, type ShirtPalette } from "./shirtPalette";
 
 type Props = {
   /** Product photo the shirt colour is sampled from. */
@@ -14,26 +13,27 @@ type Props = {
   fontFamily?: string;
 };
 
-const FALLBACK_COLOR: Rgb = [217, 221, 226];
-const SAMPLE_SIZE = 24;
-const LIT_SHARE = 0.35;
+const FALLBACK: ShirtPalette = { kind: "plain", color: [217, 221, 226] };
+const SAMPLE_SIZE = 48;
+/** Band across the shirt body that is read: the middle half of the width, 40–55% down the photo. */
+const BAND = { x: 12, y: 19, width: 24, height: 7 };
+const STRIPE_WIDTH = 34;
 const MAX_NAME_FONT = 34;
 
 const toCss = ([red, green, blue]: Rgb) => `rgb(${red}, ${green}, ${blue})`;
 const shade = (color: Rgb, factor: number): Rgb => color.map(channel => Math.round(channel * factor)) as Rgb;
-/** Perceived brightness, 0 (black) to 1 (white). */
-const luminance = ([red, green, blue]: Rgb) => (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+const mix = (a: Rgb, b: Rgb): Rgb => [0, 1, 2].map(channel => Math.round((a[channel] + b[channel]) / 2)) as Rgb;
 
 /**
- * Average colour of the middle of a product photo, where the shirt body is.
- * Returns null until the photo loads, or when the image host does not allow
- * its pixels to be read.
+ * Colours of the shirt in a product photo: one colour, or two for a striped
+ * shirt. Returns null until the photo loads, or when the image host does not
+ * allow its pixels to be read.
  */
-function useShirtColor(source: string | undefined): Rgb | null {
-  const [color, setColor] = useState<Rgb | null>(null);
+function useShirtPalette(source: string | undefined): ShirtPalette | null {
+  const [palette, setPalette] = useState<ShirtPalette | null>(null);
 
   useEffect(() => {
-    setColor(null);
+    setPalette(null);
     if (!source) return;
 
     let active = true;
@@ -46,17 +46,9 @@ function useShirtColor(source: string | undefined): Rgb | null {
         const context = canvas.getContext("2d");
         if (!context) return;
         context.drawImage(image, 0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
-
-        const third = SAMPLE_SIZE / 3;
-        const { data } = context.getImageData(third, third, third, third);
-        const pixels: Rgb[] = [];
-        for (let offset = 0; offset < data.length; offset += 4) {
-          pixels.push([data[offset], data[offset + 1], data[offset + 2]]);
-        }
-        // Folds and shadows darken a photo, so the fabric colour is read from the better-lit pixels only.
-        const lit = pixels.sort((a, b) => luminance(b) - luminance(a)).slice(0, Math.ceil(pixels.length * LIT_SHARE));
-        const average = [0, 1, 2].map(channel => Math.round(lit.reduce((sum, pixel) => sum + pixel[channel], 0) / lit.length));
-        if (active) setColor(average as Rgb);
+        const { data } = context.getImageData(BAND.x, BAND.y, BAND.width, BAND.height);
+        const result = readShirtPalette(data, BAND.width, BAND.height);
+        if (active && result) setPalette(result);
       } catch {
         // Cross-origin image without CORS headers: keep the neutral fallback.
       }
@@ -68,7 +60,7 @@ function useShirtColor(source: string | undefined): Rgb | null {
     };
   }, [source]);
 
-  return color;
+  return palette;
 }
 
 /**
@@ -77,12 +69,22 @@ function useShirtColor(source: string | undefined): Rgb | null {
  * print is shown on this drawing instead of on a photo.
  */
 export function JerseyBackPreview({ colorSource, name, number, patchLabel, fontFamily }: Props) {
-  const base = useShirtColor(colorSource) ?? FALLBACK_COLOR;
+  const palette = useShirtPalette(colorSource) ?? FALLBACK;
+  const patternId = `jersey-stripes-${useId().replace(/:/g, "")}`;
+  const isStriped = palette.kind === "striped";
+  const [lightStripe, darkStripe] =
+    palette.kind === "striped"
+      ? [...palette.colors].sort((a, b) => luminance(b) - luminance(a))
+      : [palette.color, palette.color];
+  // Overall tone decides the print colour; a striped shirt gets a heavier outline so the print reads on both stripes.
+  const base = isStriped ? mix(lightStripe, darkStripe) : palette.color;
   const isLightShirt = luminance(base) > 0.55;
   const print = isLightShirt ? "#14181c" : "#ffffff";
   const printOutline = isLightShirt ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.55)";
-  const trim = toCss(shade(base, isLightShirt ? 0.3 : 0.55));
-  const seam = toCss(shade(base, 0.8));
+  const outlineWidth = isStriped ? 5 : 3;
+  const trim = toCss(isStriped ? shade(darkStripe, 0.8) : shade(base, isLightShirt ? 0.3 : 0.55));
+  const seam = toCss(shade(isStriped ? darkStripe : base, 0.8));
+  const bodyFill = isStriped ? `url(#${patternId})` : toCss(base);
 
   const uploadedFont = fontFamily ? { fontFamily: `"${fontFamily}"` } : undefined;
 
@@ -97,12 +99,18 @@ export function JerseyBackPreview({ colorSource, name, number, patchLabel, fontF
           <stop offset="55%" stopColor="#ffffff" stopOpacity="0" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0.16" />
         </linearGradient>
+        {isStriped && (
+          <pattern id={patternId} width={STRIPE_WIDTH * 2} height="480" patternUnits="userSpaceOnUse" x="-1">
+            <rect width={STRIPE_WIDTH} height="480" fill={toCss(darkStripe)} />
+            <rect x={STRIPE_WIDTH} width={STRIPE_WIDTH} height="480" fill={toCss(lightStripe)} />
+          </pattern>
+        )}
       </defs>
 
       {/* Body and sleeves */}
       <path
         d="M148 42 Q200 66 252 42 L302 58 L386 122 L350 188 L306 162 L306 448 Q200 466 94 448 L94 162 L50 188 L14 122 L98 58 Z"
-        fill={toCss(base)}
+        fill={bodyFill}
         stroke={seam}
         strokeWidth="2"
         strokeLinejoin="round"
@@ -131,7 +139,7 @@ export function JerseyBackPreview({ colorSource, name, number, patchLabel, fontF
       <g
         fill={print}
         stroke={printOutline}
-        strokeWidth="3"
+        strokeWidth={outlineWidth}
         paintOrder="stroke"
         textAnchor="middle"
       >

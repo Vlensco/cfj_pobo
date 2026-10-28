@@ -1,5 +1,5 @@
 import { useT } from "@/i18n";
-import { formatPrice } from "@/lib/money";
+import { useFormatPrice } from "@/lib/currency";
 import type { RouterOutputs } from "@/lib/trpc";
 import { Package } from "lucide-react";
 import { CustomizationBadges } from "./CustomizationBadges";
@@ -16,6 +16,7 @@ type Props = {
 
 export function OrderLineItems({ items, variant }: Props) {
   const t = useT();
+  const formatPrice = useFormatPrice();
   const isDetail = variant === "detail";
 
   return (
@@ -52,7 +53,7 @@ export function OrderLineItems({ items, variant }: Props) {
                   </>
                 )}
               </div>
-              <CustomizationBadges customization={item.customization} detailed={isDetail} />
+              <CustomizationBadges customization={item.customization} detailed={isDetail} formatPrice={formatPrice} />
             </div>
           </div>
           <div className="ot-line-price">

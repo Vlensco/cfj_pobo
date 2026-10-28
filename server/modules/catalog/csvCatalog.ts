@@ -305,7 +305,8 @@ const tagSet = (tags: string | null) => new Set((tags ?? "").split(",").map(tag 
 function addOnKindOf(product: CsvProduct): AddOnKind | null {
   const tags = tagSet(product.tags);
   if (!tags.has("patch")) return null;
-  return tags.has("nameset") ? "nameset" : "patch";
+  // About 40 namesets carry only the "Patch" tag, so the product name counts too.
+  return tags.has("nameset") || /\bname\s?set\b/i.test(product.title) ? "nameset" : "patch";
 }
 
 let addOnCache: { list: CatalogAddOn[]; bySku: Map<string, CatalogAddOn> } | null = null;

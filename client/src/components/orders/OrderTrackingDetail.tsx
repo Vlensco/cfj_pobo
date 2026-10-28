@@ -1,6 +1,6 @@
 import { useT } from "@/i18n";
 import { FadeIn } from "@/components/MotionReveal";
-import { formatPrice } from "@/lib/money";
+import { useFormatPrice } from "@/lib/currency";
 import {
   Boxes,
   CheckCircle2,
@@ -83,6 +83,7 @@ function ProgressStepper({ order }: { order: TrackedOrder }) {
 /** Full tracking view for one order: status, timeline, courier, recipient, and purchased pieces. */
 export function OrderTrackingDetail({ order, onBack, onCopy }: Props) {
   const t = useT();
+  const formatPrice = useFormatPrice();
   const conciergeMessage = t("Hello CFJ Concierge, I would like to inquire regarding order reference: {reference}", {
     reference: order.reference,
   });

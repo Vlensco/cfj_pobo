@@ -1,5 +1,5 @@
 import { useT } from "@/i18n";
-import { formatPrice } from "@/lib/money";
+import { formatPrice as formatIdr } from "@/lib/money";
 import type { ItemCustomization } from "@shared/customization";
 import "./customization-badges.css";
 
@@ -7,10 +7,12 @@ type Props = {
   customization?: ItemCustomization | null;
   /** Shows add-on prices and the per-item note; off for compact summaries. */
   detailed?: boolean;
+  /** Storefront pages pass the visitor-currency formatter; the admin dashboard keeps rupiah. */
+  formatPrice?: (amountIdr: number) => string;
 };
 
 /** Nameset / sleeve-patch badges for an ordered piece, shared by the tracking pages and the admin dashboard. */
-export function CustomizationBadges({ customization, detailed = true }: Props) {
+export function CustomizationBadges({ customization, detailed = true, formatPrice = formatIdr }: Props) {
   const t = useT();
   const { nameset, patch, itemNote } = customization ?? {};
   if (!nameset && !patch && !(detailed && itemNote)) return null;

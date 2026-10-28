@@ -4672,10 +4672,11 @@ textarea:focus-visible {
   color: #0f172a;
 }
 
+/* No scroll box of its own: the list grows with "Show more" and the mouse wheel always scrolls the page. */
 .patches-selection-list.addon-picker-list {
-  max-height: 320px;
-  overflow-y: auto;
-  padding-right: 4px;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .addon-thumb {

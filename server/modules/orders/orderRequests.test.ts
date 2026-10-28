@@ -150,3 +150,13 @@ describe("order request pricing", () => {
     expect(tracking?.timeline).toHaveLength(5);
   });
 });
+
+describe("catalog add-on kinds", () => {
+  it("never lists a nameset among the sleeve patches", () => {
+    const patches = listCatalogAddOns({ kind: "patch", limit: 1500 }).items;
+    expect(patches.length).toBeGreaterThan(0);
+    expect(patches.filter(patch => /\bname\s?set\b/i.test(patch.name))).toEqual([]);
+    const namesets = listCatalogAddOns({ kind: "nameset", search: "Yamal", limit: 5 }).items;
+    expect(namesets.map(item => item.name)).toContain("Yamal Nameset Spain");
+  });
+});
